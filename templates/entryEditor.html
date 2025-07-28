@@ -7,14 +7,20 @@
 </head>
 <body>
     <h2>JSON 数据编辑器</h2>
-    <input type="file" id="uploadJson" accept="application/json" class="btn">
-    <button id="downloadJson" class="btn">下载 JSON</button>
-    <button id="addRow" class="btn">添加行</button>
+    <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px; width: 100%; margin: 20px 0;">
+        <input type="file" id="uploadJson" accept="application/json" class="btn">
+        <button id="downloadJson" class="btn">下载 JSON</button>
+        <button id="addRow" class="btn">添加行</button>
+        <button id="saveToServerTop" class="btn">保存到服务器</button>
+    </div>
     <table id="jsonTable">
         <thead id="tableHead"></thead>
         <tbody id="tableBody"></tbody>
     </table>
     <script src="/static/js/entryEditor.js"></script>
-    <a href="{{ url_for('index') }}" class="return-link">返回首页</a>
+    <div style="display: flex; flex-direction: column; align-items: center; width: 100%; margin: 20px 0;">
+        <button id="saveToServer" class="btn" style="margin-bottom: 20px;">保存到服务器</button>
+        <a href="{{ url_for('index') }}" class="return-link" style="display: block; margin-top: 20px;">返回首页</a>
+    </div>
 </body>
 </html>

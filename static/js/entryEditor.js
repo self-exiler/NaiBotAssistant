@@ -1,16 +1,42 @@
 let jsonData = [];
 let columns = [];
+let isLoading = false;
+
+// 显示加载状态
+function setLoading(loading) {
+    isLoading = loading;
+    document.querySelectorAll('.btn').forEach(btn => {
+        btn.disabled = loading;
+    });
+    if (loading) {
+        document.getElementById('loading').style.display = 'block';
+    } else {
+        document.getElementById('loading').style.display = 'none';
+    }
+}
 
 // 读取 data.json（后端直接返回数组，每行带category）
-fetch('/api/data')
-    .then(res => res.json())
-    .then(data => {
-        jsonData = Array.isArray(data) ? data : [];
-        if (!jsonData.length) {
-            jsonData = [{category: '', term: '', trans: '', note: ''}];
-        }
-        renderTable();
-    });
+function loadData() {
+    setLoading(true);
+    fetch('/api/data')
+        .then(res => {
+            if (!res.ok) throw new Error('Network response was not ok');
+            return res.json();
+        })
+        .then(data => {
+            jsonData = Array.isArray(data) ? data : [];
+            if (!jsonData.length) {
+                jsonData = [{category: '', term: '', trans: '', note: ''}];
+            }
+            renderTable();
+        })
+        .catch(err => {
+            alert('加载数据失败: ' + err.message);
+        })
+        .finally(() => {
+            setLoading(false);
+        });
+}
 
 function renderTable() {
     const tableHead = document.getElementById('tableHead');
@@ -43,8 +69,10 @@ window.updateCell = function(row, col, value) {
     jsonData[row][col] = value;
 }
 window.deleteRow = function(row) {
-    jsonData.splice(row, 1);
-    renderTable();
+    if (confirm('确定要删除这一行吗？')) {
+        jsonData.splice(row, 1);
+        renderTable();
+    }
 }
 document.getElementById('addRow').onclick = function() {
     let newRow = {};
@@ -76,22 +104,68 @@ document.getElementById('uploadJson').onchange = function(e) {
     }
     reader.readAsText(file);
 }
+// 转换扁平数组为嵌套结构
+function convertToNested(data) {
+    const nested = {};
+    data.forEach(item => {
+        const category = item.category;
+        if (!nested[category]) {
+            nested[category] = [];
+        }
+        nested[category].push({
+            term: item.term,
+            trans: item.trans,
+            note: item.note
+        });
+    });
+    return nested;
+}
+
 // 保存到服务器
 function saveToServer() {
+    if (!confirm('确定要保存所有更改吗？')) return;
+    
+    setLoading(true);
+    const nestedData = convertToNested(jsonData);
+    
     fetch('/api/data', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(jsonData)
-    }).then(res => res.json()).then(r => {
-        if (r.status === 'ok') alert('保存成功');
-        else alert('保存失败：' + r.msg);
+        body: JSON.stringify(nestedData)
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+    })
+    .then(r => {
+        if (r.status === 'ok') {
+            alert('保存成功');
+            loadData(); // 重新加载数据确保一致性
+        } else {
+            throw new Error(r.msg || '保存失败');
+        }
+    })
+    .catch(err => {
+        alert('保存失败: ' + err.message);
+    })
+    .finally(() => {
+        setLoading(false);
     });
 }
-// 增加保存按钮
+// 增加保存按钮和加载指示器
 window.addEventListener('DOMContentLoaded', function() {
-    let saveBtn = document.createElement('button');
-    saveBtn.textContent = '保存到服务器';
-    saveBtn.className = 'btn';
-    saveBtn.onclick = saveToServer;
-    document.body.insertBefore(saveBtn, document.getElementById('jsonTable'));
+    // 添加加载指示器
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loading';
+    loadingDiv.style.display = 'none';
+    loadingDiv.textContent = '加载中...';
+    loadingDiv.style.margin = '10px 0';
+    document.body.insertBefore(loadingDiv, document.getElementById('jsonTable'));
+    
+    // 添加保存按钮事件
+    document.getElementById('saveToServer').onclick = saveToServer;
+    document.getElementById('saveToServerTop').onclick = saveToServer;
+    
+    // 初始加载数据
+    loadData();
 });
