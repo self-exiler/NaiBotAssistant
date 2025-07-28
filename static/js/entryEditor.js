@@ -74,36 +74,7 @@ window.deleteRow = function(row) {
         renderTable();
     }
 }
-document.getElementById('addRow').onclick = function() {
-    let newRow = {};
-    columns.forEach(col => newRow[col] = '');
-    jsonData.push(newRow);
-    renderTable();
-}
-document.getElementById('downloadJson').onclick = function() {
-    const blob = new Blob([JSON.stringify(jsonData, null, 2)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'data.json';
-    a.click();
-    URL.revokeObjectURL(url);
-}
-document.getElementById('uploadJson').onchange = function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-        try {
-            let data = JSON.parse(evt.target.result);
-            jsonData = Array.isArray(data) ? data : [];
-            renderTable();
-        } catch (err) {
-            alert('JSON 解析失败');
-        }
-    }
-    reader.readAsText(file);
-}
+
 // 转换扁平数组为嵌套结构
 function convertToNested(data) {
     const nested = {};
@@ -166,6 +137,38 @@ window.addEventListener('DOMContentLoaded', function() {
     document.getElementById('saveToServer').onclick = saveToServer;
     document.getElementById('saveToServerTop').onclick = saveToServer;
     
+    // 添加事件处理
+    document.getElementById('addRow').onclick = function() {
+        let newRow = {};
+        columns.forEach(col => newRow[col] = '');
+        jsonData.push(newRow);
+        renderTable();
+    };
+    document.getElementById('downloadJson').onclick = function() {
+        const blob = new Blob([JSON.stringify(jsonData, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'data.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+    document.getElementById('uploadJson').onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                let data = JSON.parse(evt.target.result);
+                jsonData = Array.isArray(data) ? data : [];
+                renderTable();
+            } catch (err) {
+                alert('JSON 解析失败');
+            }
+        };
+        reader.readAsText(file);
+    };
+
     // 初始加载数据
     loadData();
 });
