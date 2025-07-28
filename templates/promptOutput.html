@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>数据输出</title>
+
+    <link rel="stylesheet" href="/static/style/style.css">
+</head>
+<body>
+    <h1>生成译文列表</h1>
+
+    <!-- 分类选择 -->
+    <div class="category-select-block">
+        <label for="categorySelect">选择分类：</label>
+        <select id="categorySelect">
+            <option value="">——请选择——</option>
+        </select>
+    </div>
+
+    <!-- 词条复选框区域 -->
+    <div id="termList"></div>
+
+    <textarea id="outputArea" rows="6" cols="60" readonly></textarea>
+
+    <button id="copyBtn" class="btn">复制到剪贴板</button>
+
+    <a href="{{ url_for('index') }}" class="return-link">返回首页</a>
+
+    <script src="/static/js/promptOutput.js"></script>
+</body>
+</html>
