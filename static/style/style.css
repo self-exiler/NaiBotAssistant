@@ -1,48 +1,95 @@
+/* 编辑器工具栏和操作区样式 */
+.editor-toolbar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    margin: 20px 0;
+}
+.editor-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin: 20px 0;
+    gap: 10px;
+}
+:root {
+  --primary-color: #3a6ea5;
+  --primary-dark: #2b5c8a;
+  --secondary-color: #5db2ff;
+  --text-color: #222;
+  --error-color: #ff2600;
+  --border-color: #b5c7d3;
+  --bg-color: #f8fafc;
+  --shadow-light: rgba(58,110,165,0.08);
+  --shadow-dark: rgba(58,110,165,0.13);
+  --max-width: 520px;
+  --mobile-max-width: 98vw;
+}
+
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-  20%, 40%, 60%, 80% { transform: translateX(5px); }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  10%, 30%, 50%, 70%, 90% { transform: translate3d(-5px, 0, 0); }
+  20%, 40%, 60%, 80% { transform: translate3d(5px, 0, 0); }
 }
 
 .shake-message {
   animation: shake 0.5s ease-in-out;
 }
 
+/* 通用 label 样式 */
+label {
+    display: block;
+    font-size: 1.08em;
+    margin-bottom: 6px;
+    text-align: left;
+    width: 100%;
+    color: var(--text-color);
+}
+
 /* 分类选择块样式 */
 .category-select-block {
-    max-width: 520px;
+    max-width: var(--max-width);
     margin: 0 auto 18px auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
 }
-.category-select-block label {
-    font-size: 1.08em;
-    margin-bottom: 0;
-    text-align: center;
+
+/* 下拉框和输入框统一样式 */
+select,
+input[type="text"],
+textarea {
     width: 100%;
-}
-#categorySelect {
-    display: block;
-    width: 100%;
-    max-width: 520px;
     min-width: 120px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-bottom: 8px;
+    max-width: var(--max-width);
     box-sizing: border-box;
-    text-align: center;
+    padding: 0.5em 0.75em;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1em;
+    margin-top: 0.375em;
+    transition: border-color 0.2s;
+    background: #fff;
+    color: var(--text-color);
 }
+select:focus,
+input[type="text"]:focus,
+textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+#categorySelect,
 #termList {
     display: block;
-    width: 100%;
-    max-width: 520px;
-    min-width: 120px;
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 8px;
-    box-sizing: border-box;
     text-align: left;
 }
 /* 表单提示信息样式 */
@@ -81,50 +128,44 @@ ul.main-menu {
     margin: 48px auto 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 24px;  
 }
 ul.main-menu li {
     text-align: center;
 }
+/* 通用按钮样式 */
+.btn,
+button[type="submit"],
+button#copyBtn,
 a.main-btn {
     display: block;
     width: 100%;
-    min-width: 180px;
-    max-width: 320px;
-    margin: 0 auto;
-    background: linear-gradient(90deg, #3a6ea5 0%, #5db2ff 100%);
-    color: #fff;
-    text-decoration: none;
-    padding: 14px 0;
-    border-radius: 8px;
-    font-size: 1.15em;
-    box-shadow: 0 2px 8px rgba(58,110,165,0.08);
-    transition: background 0.2s, box-shadow 0.2s;
-    text-align: center;
-}
-a.main-btn:hover {
-    background: linear-gradient(90deg, #2b5c8a 0%, #3a6ea5 100%);
-    box-shadow: 0 4px 16px rgba(58,110,165,0.13);
-}
-/* 通用按钮样式 */
-.btn, button[type="submit"], button#copyBtn {
-    display: block;
-    width: 100%;
-    max-width: 320px;
-    margin: 18px auto 0 auto;
-    background: linear-gradient(90deg, #3a6ea5 0%, #5db2ff 100%);
+    max-width: var(--max-width);
+    margin: 8px auto;
+    background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: #fff;
     border: none;
-    border-radius: 6px;
-    padding: 10px 0;
-    font-size: 1.08em;
+    border-radius: 12px;
+    padding: 14px 0;
+    font-size: 1.15em;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(58,110,165,0.08);
-    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 12px var(--shadow-light);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    text-align: center;
+    text-decoration: none;
 }
-.btn:hover, button[type="submit"]:hover, button#copyBtn:hover {
-    background: linear-gradient(90deg, #2b5c8a 0%, #3a6ea5 100%);
-    box-shadow: 0 4px 16px rgba(58,110,165,0.13);
+.btn:hover,
+button[type="submit"]:hover,
+button#copyBtn:hover,
+a.main-btn:hover {
+    background: linear-gradient(90deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+    box-shadow: 0 6px 20px var(--shadow-dark);
+    transform: translateY(-2px);
+}
+a.main-btn {
+    padding: 14px 0;
+    font-size: 1.15em;
+    margin: 0 auto;
 }
 a.return-link {
     display: block;
@@ -146,47 +187,15 @@ a.return-link:hover {
     text-decoration: underline;
 }
 /* 表单和下拉框统一宽度 */
-form, #termList, select, textarea, #outputArea, .category-select-block, .search-filter-block {
-    max-width: 520px;
+:where(form, #termList, textarea, #outputArea, .category-select-block, .search-filter-block) {
+    max-width: var(--max-width);
     margin-left: auto;
     margin-right: auto;
+    text-align: center;
 }
-select {
-    width: 100%;
-    min-width: 120px;
-    max-width: 340px;
-    box-sizing: border-box;
-}
-.btn {
-    margin: 8px 4px;
-    padding: 6px 16px;
-    border-radius: 6px;
-    border: none;
-    background: linear-gradient(90deg, #3a6ea5 0%, #5db2ff 100%);
-    color: #fff;
-    font-size: 1em;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(58,110,165,0.08);
-    transition: background 0.2s, box-shadow 0.2s;
-}
-.btn:hover {
-    background: linear-gradient(90deg, #2b5c8a 0%, #3a6ea5 100%);
-    box-shadow: 0 4px 16px rgba(58,110,165,0.13);
-}
-input[type="text"], textarea, select {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #b5c7d3;
-    border-radius: 6px;
-    font-size: 1em;
-    margin-top: 6px;
-    box-sizing: border-box;
-    transition: border-color 0.2s;
-}
-input[type="text"]:focus, textarea:focus, select:focus {
-    border-color: #3a6ea5;
-    outline: none;
-}
+    /* 已归并到通用输入控件样式 */
+/* 已归并到通用按钮样式 */
+/* 已归并到上方通用输入控件样式 */
 table {
     border-collapse: collapse;
     width: 100%;
@@ -203,9 +212,13 @@ form {
     background: #fff;
     max-width: 400px;
     margin: 40px auto 0 auto;
-    padding: 32px 32px 24px 32px;
+    padding: 32px;
     border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(58,110,165,0.10), 0 1.5px 6px rgba(0,0,0,0.04);
+    box-shadow: 0 8px 32px rgba(58,110,165,0.12), 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+}
+form:hover {
+    box-shadow: 0 12px 40px rgba(58,110,165,0.15), 0 3px 10px rgba(0,0,0,0.08);
 }
 #termList {
     max-width: 520px;
@@ -230,30 +243,30 @@ form {
     box-sizing: border-box;
     resize: vertical;
 }
-@media (max-width: 600px) {
+@media (max-width: 37.5em) {
     h1, h2 {
         font-size: 1.2em;
-        margin-top: 18px;
+        margin-top: 1.125em;
     }
     ul.main-menu {
-        max-width: 98vw;
-        margin-top: 24px;
+        max-width: var(--mobile-max-width);
+        margin-top: 1.5em;
     }
     a.main-btn {
         font-size: 1em;
-        padding: 12px 0;
+        padding: 0.75em 0;
         width: 100%;
         min-width: 0;
-        max-width: 98vw;
+        max-width: var(--mobile-max-width);
     }
-    form, #termList, select, textarea, #outputArea {
-        max-width: 98vw;
-        padding: 0 2vw;
+    :where(form, #termList, textarea, #outputArea) {
+        max-width: var(--mobile-max-width);
+        padding: 0 0.125em;
     }
-    button, .btn, button#copyBtn {
+    :is(button, .btn, button#copyBtn) {
         width: 100%;
-        padding: 10px 0;
+        padding: 0.625em 0;
         font-size: 1em;
-        max-width: 98vw;
+        max-width: var(--mobile-max-width);
     }
 }
