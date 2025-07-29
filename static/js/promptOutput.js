@@ -17,7 +17,22 @@ document.getElementById('categorySelect').addEventListener('change', function(){
     if(!category) return;
     fetch('/api/terms/' + encodeURIComponent(category))
         .then(r => r.json())
-        .then(terms => renderTerms(terms));
+        .then(terms => {
+            renderTerms(terms);
+            // 初始化搜索过滤
+            document.getElementById('searchInput').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const termItems = document.querySelectorAll('#termList label');
+                termItems.forEach(item => {
+                    const termText = item.textContent.toLowerCase();
+                    item.style.display = termText.includes(searchTerm) ? '' : 'none';
+                    const nextBr = item.nextElementSibling;
+                    if(nextBr && nextBr.tagName === 'BR') {
+                        nextBr.style.display = termText.includes(searchTerm) ? '' : 'none';
+                    }
+                });
+            });
+        });
 });
 // ---------- 渲染复选框 ----------
 function renderTerms(terms){

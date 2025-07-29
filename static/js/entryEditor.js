@@ -47,10 +47,17 @@ function renderTable() {
     if (!Array.isArray(jsonData) || jsonData.length === 0) {
         columns = ['category', 'term', 'trans', 'note'];
     } else {
-        columns = Object.keys(jsonData[0]);
+        // 确保列顺序一致
+        const defaultCols = ['category', 'term', 'trans', 'note'];
+        columns = defaultCols.filter(col => Object.keys(jsonData[0]).includes(col));
     }
     // 表头
-    let headRow = '<tr>' + columns.map(col => `<th>${col}</th>`).join('') + '<th>操作</th></tr>';
+    let headRow = '<tr>' + 
+        '<th style="width: 5%">category</th>' +
+        '<th style="width: 25%">term</th>' +
+        '<th style="width: 25%">trans</th>' +
+        '<th style="width: 40%">note</th>' +
+        '<th style="width: 5%">操作</th></tr>';
     tableHead.innerHTML = headRow;
     // 表体
     if (Array.isArray(jsonData) && jsonData.length > 0) {

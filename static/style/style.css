@@ -146,8 +146,8 @@ a.return-link:hover {
     text-decoration: underline;
 }
 /* 表单和下拉框统一宽度 */
-form, #termList, select, textarea, #outputArea {
-    max-width: 340px;
+form, #termList, select, textarea, #outputArea, .category-select-block, .search-filter-block {
+    max-width: 520px;
     margin-left: auto;
     margin-right: auto;
 }
