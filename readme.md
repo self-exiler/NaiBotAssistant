@@ -1,9 +1,23 @@
-使用python/flask创建这样一个程序，GUI通过web实现。
 
-1、网页架构为一个index.html为首页，两个功能页面，entryInput.html和promptOutput.html。
 
-2、entryInput.html上提供输入框，输入数据，包含分类，词条，译文，备注四个部分，前三个部必填，否则不能录入，录入数据保存到一个data.json文件中，分类为一级，其他三个嵌套其下。
+<h1 style="text-align: center;">NaiBotAssitant：NovelAI提示词组合助手</h1>
 
-3、promptOutput.html上做如下，第一个下拉选项框，读取数据文件中的分类，选择分类之后，将所属的条目的词条，和备注以复选框列表的方式显示出来，勾选后，将对应的译文录入下方的文本框，取消勾选后同步删除，文字通过英文逗号分隔，切换分类时，文本框中的文字要保留，切换分类后复选框的勾选状态不能丢失。下方有复制按钮，点击时，将“nai”+"空格"+“文本框内容”复制到剪贴板。
+# 用途
 
-4、以上为前端，后端通过python程序实现，python程序文件适当模块化。尽量减少前端使用javascript嵌入html。
+目前有一位好心人在私人QQ群里提供了AI绘图，利用AI绘图+[NovelAI-bot](https://github.com/koishijs/novelai-bot)，鉴于关键词手写麻烦，于是写了这么一个程序。
+
+# 功能
+
+1. 词条录入，含分类、词条、译文、备注四条。
+2. 词条组合，选择分类后，输入过滤字，勾选组合，点击复制，复制nai（QQ群中nai开头为唤起机器人的口令）
+3. 数据库批量编辑。
+
+# 工具和借鉴
+
+Python/Flask+Web页面+JavaScript
+
+AI：使用Github Copilot/TRAE交替审查编写
+
+词库保存在data.json中，仓库里的仅作为demo，在[个人甲骨文云服务器的应用部署页面](http://132.145.99.231:15252/)公开可下载。
+
+参考了 [Danbooru 标签超市](https://tags.novelai.dev/) 项目中的词条数据，据此，对本仓库也采取AGPL3.0开放，此项目也有完善的关键词组合功能，但是我希望独立做一个更简洁的，且词条经过我使用再录入的。
