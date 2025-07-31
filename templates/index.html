@@ -3,16 +3,18 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>首页</title>
+    <title>NovelAI提示词组合助手</title>
 
     <link rel="stylesheet" href="/static/style/style.css">
 </head>
 <body>
     <h1>首页</h1>
     <ul class="main-menu">
-        <li><a class="main-btn" href="{{ url_for('entry_input') }}">数据录入</a></li>
-        <li><a class="main-btn" href="{{ url_for('prompt_output') }}">数据输出</a></li>
-        <li><a class="main-btn" href="{{ url_for('entry_editor') }}">数据编辑器</a></li>
+        <li><a class="main-btn" href="{{ url_for('entry_input') }}">词条录入</a></li>
+        <li><a class="main-btn" href="{{ url_for('prompt_output') }}">词条组合输出</a></li>
+        <li><a class="main-btn" href="{{ url_for('entry_editor') }}">批量词条编辑器</a></li>
+        <li><a id="backupBtn" class="main-btn" href="{{ url_for('backup_data') }}">备份数据</a></li>
     </ul>
+    <a href="https://github.com/self-exiler/NaiBotAssistant" class="return-link">Github项目地址</a>
 </body>
 </html>

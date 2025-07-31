@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="错误页面">
+    <title>出错了 - NovelAI提示词组合助手</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
+</head>
+<body>
+    <header class="container">
+        <h1>出错了</h1>
+    </header>
+
+    <main class="container error-page">
+        <div class="error-message">
+            <p>抱歉，发生了一些错误：</p>
+            <p class="error-details">{{ error }}</p>
+        </div>
+        <a href="{{ url_for('index') }}" class="btn">返回首页</a>
+    </main>
+</body>
+</html>

@@ -1,37 +1,71 @@
-<!doctype html>
-<html lang="zh">
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>数据输出</title>
-
-    <link rel="stylesheet" href="/static/style/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="NovelAI提示词组合助手 - 提示词输出">
+    <title>提示词输出 - NovelAI提示词组合助手</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
 </head>
 <body>
-    <h1>生成译文列表</h1>
+    <header class="container">
+        <h1>提示词输出</h1>
+    </header>
 
-    <!-- 分类选择 -->
-    <div class="category-select-block">
-        <label >选择分类：</label>
-        <select id="categorySelect">
-            <option value="">——请选择——</option>
-        </select>
-    </div>
+    <main class="container">
+        <form id="promptForm" class="prompt-form">
+            <div class="category-select-block">
+                <label for="categorySelect">选择分类：</label>
+                <select id="categorySelect" aria-label="选择词条分类">
+                    <option value="">——请选择——</option>
+                </select>
+            </div>
 
-    <!-- 搜索过滤 -->
-    <div class="search-filter-block">
-        <label >搜索词条：</label>
-        <input type="text" id="searchInput" placeholder="输入关键词过滤">
-    </div>
+            <div class="search-filter-block">
+                <label for="searchInput">检索词条：</label>
+                <input type="text" 
+                       id="searchInput" 
+                       placeholder="输入关键词过滤"
+                       aria-label="搜索词条">
+            </div>
 
-    <!-- 词条复选框区域 -->
-    <div id="termList"></div>
-    <textarea id="outputArea" rows="6" cols="60" readonly></textarea>
+            <div id="termList" 
+                 class="term-list" 
+                 role="group" 
+                 aria-label="词条列表"></div>
 
-    <button id="copyBtn" class="btn">复制到剪贴板</button>
+            <textarea id="outputArea" 
+                      rows="6" 
+                      cols="60" 
+                      readonly 
+                      aria-label="生成的提示词"
+                      class="output-area"></textarea>
 
-    <a href="{{ url_for('index') }}" class="return-link">返回首页</a>
+            <div class="button-group">
+                <button type="button" 
+                        id="clearBtn" 
+                        class="btn"
+                        aria-label="清除所有选中的词条">
+                    清除选中
+                </button>
+                <button type="button" 
+                        id="copyBtn" 
+                        class="btn"
+                        aria-label="复制生成的提示词到剪贴板">
+                    复制到剪贴板
+                </button>
+            </div>
+        </form>
+    </main>
 
-    <script src="/static/js/promptOutput.js"></script>
+    <footer class="container">
+        <a href="{{ url_for('index') }}" 
+           class="return-link"
+           aria-label="返回到首页">
+            返回首页
+        </a>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/promptOutput.js') }}"></script>
 </body>
 </html>

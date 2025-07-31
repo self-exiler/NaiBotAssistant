@@ -1,28 +1,77 @@
-<!doctype html>
-<html lang="zh">
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>数据录入</title>
-
-    <link rel="stylesheet" href="/static/style/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="NovelAI提示词组合助手 - 词条录入">
+    <title>词条录入 - NovelAI提示词组合助手</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
 </head>
 <body>
-    <!-- ...existing code... -->
-    <script src="/static/js/entryInput.js"></script>
-</head>
-<body>
-    <h1>录入新词条</h1>
-    <form id="entryForm">
-        <label>分类：<input type="text" name="category" required placeholder="如：人名、身材、视角、装束、表情"></label>
-        <label>词条：<input type="text" name="term" required placeholder="请输入词条"></label>
-        <label>译文：<input type="text" name="trans" required placeholder="请输入译文"></label>
-        <label>备注：<input type="text" name="note" placeholder="可选"></label>
-        <button type="submit" class="btn">保存</button>
-        <span id="msg"></span>
-    </form>
-    <a href="{{ url_for('index') }}" class="return-link">返回首页</a>
+    <header class="container">
+        <h1>词条录入</h1>
+    </header>
 
-    <!-- JS已独立到/static/js/entryInput.js -->
+    <main class="container">
+        <form id="entryForm" class="input-form" novalidate>
+            <div class="form-group">
+                <label for="category">分类：</label>
+                <input type="text" 
+                       id="category" 
+                       name="category" 
+                       required 
+                       placeholder="如：人名、身材、视角、装束、表情"
+                       aria-required="true">
+                <div class="form-help" id="categoryHelp"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="term">词条：</label>
+                <input type="text" 
+                       id="term" 
+                       name="term" 
+                       required 
+                       placeholder="请输入词条"
+                       aria-required="true">
+                <div class="form-help" id="termHelp"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="trans">译文：</label>
+                <input type="text" 
+                       id="trans" 
+                       name="trans" 
+                       required 
+                       placeholder="请输入译文"
+                       aria-required="true">
+                <div class="form-help" id="transHelp"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="note">备注：</label>
+                <input type="text" 
+                       id="note" 
+                       name="note" 
+                       placeholder="可选">
+                <div class="form-help" id="noteHelp"></div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn" aria-label="保存词条">保存</button>
+            </div>
+
+            <div id="msg" role="alert" aria-live="polite"></div>
+        </form>
+    </main>
+
+    <footer class="container">
+        <a href="{{ url_for('index') }}" 
+           class="return-link" 
+           aria-label="返回到首页">
+            返回首页
+        </a>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/entryInput.js') }}"></script>
 </body>
 </html>
