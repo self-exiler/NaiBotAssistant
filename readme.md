@@ -1,5 +1,3 @@
-
-
 <h1 style="text-align: center;">NaiBotAssitant：NovelAI提示词组合助手</h1>
 
 # 用途
@@ -21,3 +19,18 @@ AI：使用Github Copilot/TRAE交替审查编写
 词库保存在data.json中，仓库里的仅作为demo，在[个人甲骨文云服务器的应用部署页面](http://132.145.99.231:15252/)公开可下载。
 
 参考了 [Danbooru 标签超市](https://tags.novelai.dev/) 项目中的词条数据，据此，对本仓库也采取AGPL3.0开放，此项目也有完善的关键词组合功能，但是我希望独立做一个更简洁的，且词条经过我使用再录入的。
+
+# 运行方式
+
+调试：直接
+
+```bash
+python app.py
+```
+
+服务器部署
+
+```bash
+sudo pip install waitress
+nohup waitress-serve --host=0.0.0.0 --port=15252 app:app &
+```
