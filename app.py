@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, send_file
-import json
+import orjson
 import os
 import logging
 from datetime import datetime
@@ -28,6 +28,18 @@ handler.setFormatter(logging.Formatter(
 ))
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.INFO)
+
+# 配置Flask使用orjson作为JSON解析器
+from flask.json.provider import JSONProvider
+
+class ORJSONProvider(JSONProvider):
+    def dumps(self, obj, **kwargs):
+        return orjson.dumps(obj, option=orjson.OPT_NON_STR_KEYS).decode('utf-8')
+    
+    def loads(self, s, **kwargs):
+        return orjson.loads(s)
+
+app.json = ORJSONProvider(app)
 
 # 错误处理装饰器
 def handle_errors(f):
@@ -60,14 +72,15 @@ def load_data():
             return {}
             
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+            content = f.read()
+            data = orjson.loads(content)
             
             if not isinstance(data, dict):
                 app.logger.error(f'Invalid data format in {DATA_FILE}')
                 return {}
                 
             return data
-    except json.JSONDecodeError as e:
+    except orjson.JSONDecodeError as e:
         app.logger.error(f'JSON decode error in {DATA_FILE}: {str(e)}')
         # 创建损坏文件的备份
         backup_file = f'{DATA_FILE}.{datetime.now().strftime("%Y%m%d_%H%M%S")}.bak'
@@ -102,8 +115,8 @@ def save_data(data):
             app.logger.info(f'Created backup: {backup_file}')
         
         # 保存新数据
-        with open(DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+        with open(DATA_FILE, 'wb') as f:
+            f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS))
             
         app.logger.info('Data saved successfully')
         return True
@@ -428,7 +441,7 @@ def api_save_data():
         save_data(data)
         app.logger.info('Data saved successfully')
         return jsonify({'status': 'ok'})
-    except json.JSONDecodeError:
+    except orjson.JSONDecodeError:
         app.logger.error('Invalid JSON data received')
         return jsonify({'status': 'error', 'msg': '无效的 JSON 数据'})
     except Exception as e:
@@ -440,7 +453,8 @@ if __name__ == '__main__':
     sys_config_path = os.path.join(BASE_DIR, 'system.json')
     if os.path.exists(sys_config_path):
         with open(sys_config_path, 'r', encoding='utf-8') as f:
-            sys_config = json.load(f)
+            content = f.read()
+            sys_config = orjson.loads(content)
         port = sys_config.get('port', 5000)
     else:
         port = 5000
