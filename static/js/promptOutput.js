@@ -299,7 +299,9 @@ document.getElementById('copyBtn').addEventListener('click', async function() {
         return;
     }
     
-    const finalText = 'nai ' + text;
+    // 检查是否需要添加 nai 前缀
+    const useNaiPrefix = document.getElementById('naiPrefix').checked;
+    const finalText = useNaiPrefix ? 'nai ' + text : text;
     
     try {
         if (navigator.clipboard && window.isSecureContext) {

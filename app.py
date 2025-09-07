@@ -10,11 +10,20 @@ import traceback
 # 基础配置
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, 'data.json')
+SYSTEM_FILE = os.path.join(BASE_DIR, 'system.json')
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
 
 # 确保日志目录存在
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
+
+# 读取系统配置
+def load_system_config():
+    try:
+        with open(SYSTEM_FILE, 'rb') as f:
+            return orjson.loads(f.read())
+    except Exception as e:
+        return {"log_level": "warn"}  # 默认配置
 
 # 配置日志记录
 app = Flask(__name__)
@@ -27,7 +36,19 @@ handler.setFormatter(logging.Formatter(
     '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
 ))
 app.logger.addHandler(handler)
-app.logger.setLevel(logging.INFO)
+
+# 设置日志等级
+system_config = load_system_config()
+log_level = system_config.get('log_level', 'warn').upper()
+log_level_map = {
+    'DEBUG': logging.DEBUG,
+    'INFO': logging.INFO,
+    'WARN': logging.WARNING,
+    'WARNING': logging.WARNING,
+    'ERROR': logging.ERROR,
+    'CRITICAL': logging.CRITICAL
+}
+app.logger.setLevel(log_level_map.get(log_level, logging.WARNING))
 
 # 配置Flask使用orjson作为JSON解析器
 from flask.json.provider import JSONProvider

@@ -1,3 +1,4 @@
 {
-    "port": 15252
+    "port": 15252,
+    "log_level": "warn"
 }
