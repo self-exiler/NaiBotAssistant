@@ -4,12 +4,12 @@ const validationRules = {
         required: true,
         minLength: 1,
         maxLength: 20,
-        pattern: /^[\u4e00-\u9fa5a-zA-Z0-9\s]+$/,
+        pattern: /^[\u4e00-\u9fa5a-zA-Z0-9\s\-]+$/,
         message: {
             required: '请输入分类名称',
             minLength: '分类名称不能为空',
             maxLength: '分类名称不能超过20个字符',
-            pattern: '分类名称只能包含中文、英文、数字和空格'
+            pattern: '分类名称只能包含中文、英文、数字、空格和连字符(-)'
         }
     },
     term: {
