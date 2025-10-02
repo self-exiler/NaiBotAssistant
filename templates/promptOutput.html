@@ -6,6 +6,8 @@
     <meta name="description" content="NovelAI提示词组合助手 - 提示词输出">
     <title>提示词输出 - NovelAI提示词组合助手</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
+    <!-- 优化点：使用 defer 加快页面渲染 -->
+    <script src="{{ url_for('static', filename='js/promptOutput.js') }}" defer></script>
 </head>
 <body>
     <header class="container">
@@ -72,7 +74,5 @@
             返回首页
         </a>
     </footer>
-
-    <script src="{{ url_for('static', filename='js/promptOutput.js') }}"></script>
 </body>
 </html>
