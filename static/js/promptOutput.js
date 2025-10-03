@@ -4,8 +4,6 @@ const state = {
     currentCategory: '',
     searchTerm: '',
     isLoading: false,
-    // --- 优化点 2: 客户端缓存 ---
-    // 创建一个缓存对象来存储已获取的分类词条
     termsCache: {}
 };
 
@@ -39,7 +37,7 @@ function showNotification(message, type = 'info') {
     
     setTimeout(() => {
         notification.classList.add('fade-out');
-        setTimeout(() => notification.remove(), 300);
+        setTimeout(() => notification.remove(), 2000);
     }, 2000);
 }
 
@@ -64,15 +62,11 @@ async function fetchCategories() {
 }
 
 async function fetchTerms(category) {
-    // --- 优化点 2: 使用缓存 ---
-    // 在请求前，先检查缓存中是否已有该分类的数据
     if (state.termsCache[category]) {
         return state.termsCache[category];
     }
-
     try {
         const terms = await fetchAPI(`/api/terms/${encodeURIComponent(category)}`);
-        // 请求成功后，将数据存入缓存
         state.termsCache[category] = terms;
         return terms;
     } catch (error) {
@@ -132,7 +126,7 @@ function renderTerms(terms) {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'term-checkbox';
-        checkbox.value = trans; // 使用 value 存储 trans
+        checkbox.value = trans;
         checkbox.dataset.term = term;
         checkbox.checked = state.selectedTerms.has(trans);
         
@@ -170,7 +164,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const categorySelect = document.getElementById('categorySelect');
     const termList = document.getElementById('termList');
     
-    // 监听分类选择变化
     categorySelect.addEventListener('change', async function(event) {
         const category = event.target.value;
         state.currentCategory = category;
@@ -185,8 +178,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderTerms(terms);
     });
 
-    // --- 优化点 1: 事件委托 ---
-    // 将点击事件监听器绑定在父元素 termList 上
     termList.addEventListener('change', function(e) {
         if (e.target.type === 'checkbox') {
             const trans = e.target.value;
@@ -199,13 +190,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 监听搜索输入
     document.getElementById('searchInput').addEventListener('input', e => handleSearch(e.target.value));
     
-    // 监听前缀选项
     document.getElementById('naiPrefix').addEventListener('change', updateOutputText);
 
-    // 清除选中
     document.getElementById('clearBtn').addEventListener('click', function() {
         if (state.selectedTerms.size === 0) return;
         state.selectedTerms.clear();
@@ -217,17 +205,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // 复制
     document.getElementById('copyBtn').addEventListener('click', async function() {
         const outputArea = document.getElementById('outputArea');
-        const text = outputArea.value.trim();
-        if (!text) {
+        // 修复点：直接使用 outputArea.value，不再进行额外的拼接
+        const textToCopy = outputArea.value.trim();
+        
+        if (!textToCopy) {
             showNotification(UI.MESSAGES.NO_CONTENT, 'warning');
             return;
         }
         try {
-            await navigator.clipboard.writeText(text);
+            await navigator.clipboard.writeText(textToCopy);
             showNotification(UI.MESSAGES.COPY_SUCCESS, 'success');
         } catch (error) {
             showNotification(UI.MESSAGES.COPY_FAILED, 'error');
-            outputArea.select(); // 失败时帮助用户手动复制
+            outputArea.select();
         }
     });
 });

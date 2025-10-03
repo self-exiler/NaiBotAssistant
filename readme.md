@@ -32,5 +32,5 @@ python app.py
 
 ```bash
 sudo pip install waitress
-nohup waitress-serve --host=0.0.0.0 --port=15252 app:app &
+nohup python waitress.py &
 ```
