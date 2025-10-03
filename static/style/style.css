@@ -7,6 +7,9 @@
     --text-muted: #6c757d;
     --error-color: #ff2600;
     --success-color: #28a745;
+    /* 新增：通知颜色 */
+    --info-color: #17a2b8;
+    --warning-color: #ffc107;
     --border-color: #b5c7d3;
     --bg-color: #f8fafc;
     --shadow-light: rgba(58, 110, 165, 0.08);
@@ -145,14 +148,26 @@ input.error {
 }
 
 .status-message.success, #msg.success, .success-message {
-    color: #2e7d32;
-    background-color: rgba(46, 125, 50, 0.1);
+    color: #fff;
+    background-color: var(--success-color);
 }
 
 .status-message.error, #msg.error, .form-help.error, .error-message {
-    color: var(--error-color);
-    background-color: rgba(255, 38, 0, 0.1);
+    color: #fff;
+    background-color: var(--error-color);
 }
+
+/* 新增：info 和 warning 样式 */
+.status-message.info {
+    color: #fff;
+    background-color: var(--info-color);
+}
+
+.status-message.warning {
+    color: var(--text-color);
+    background-color: var(--warning-color);
+}
+
 
 /* ===== 页面特定样式 ===== */
 
@@ -230,7 +245,6 @@ input.error {
 /* 批量编辑器 (entryEditor.html) */
 .editor-container {
     max-width: 1200px;
-    /* 修复点：将 margin: 0 auto; 加回来以实现水平居中 */
     margin: 0 auto;
     padding: 0.5rem;
 }
@@ -326,7 +340,7 @@ td input:focus { border-color: var(--primary-color); background: #fff; }
 }
 
 @keyframes loading-spin {
-    to { transform: rotate(360deg); }
+    to { transform: rotate(3D0deg); }
 }
 
 .shake-message {
