@@ -41,6 +41,40 @@ function showNotification(message, type = 'info') {
     }, 2000);
 }
 
+// 修复点：创建了一个更健壮的复制函数
+async function copyToClipboard(text) {
+    // 优先使用现代、安全的 Clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true; // 成功
+        } catch (error) {
+            console.error("Clipboard API 失败，尝试后备方法:", error);
+            // 如果失败，则继续尝试后备方法
+        }
+    }
+
+    // 后备方法：使用 document.execCommand (兼容HTTP)
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    // 移出屏幕外，防止页面抖动
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return successful;
+    } catch (err) {
+        console.error('后备的 execCommand 方法失败:', err);
+        document.body.removeChild(textarea);
+        return false;
+    }
+}
+
+
 // API 请求函数
 async function fetchAPI(url) {
     const response = await fetch(url);
@@ -205,19 +239,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // 复制
     document.getElementById('copyBtn').addEventListener('click', async function() {
         const outputArea = document.getElementById('outputArea');
-        // 修复点：直接使用 outputArea.value，不再进行额外的拼接
         const textToCopy = outputArea.value.trim();
         
         if (!textToCopy) {
             showNotification(UI.MESSAGES.NO_CONTENT, 'warning');
             return;
         }
-        try {
-            await navigator.clipboard.writeText(textToCopy);
+
+        const success = await copyToClipboard(textToCopy);
+
+        if (success) {
             showNotification(UI.MESSAGES.COPY_SUCCESS, 'success');
-        } catch (error) {
+        } else {
             showNotification(UI.MESSAGES.COPY_FAILED, 'error');
-            outputArea.select();
+            outputArea.select(); // 失败时帮助用户手动复制
         }
     });
 });
+
