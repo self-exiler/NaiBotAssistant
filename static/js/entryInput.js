@@ -88,6 +88,9 @@ async function submitForm(formElement) {
             showMessage(`${fieldName}Help`, '', 'info');
         });
 
+        // 成功提交后重新加载分类，以便新分类能出现在下拉列表中
+        await loadCategories();
+
     } catch (error) {
         console.error('提交表单出错:', error);
         showMessage('msg', error.message, 'error');
@@ -96,6 +99,32 @@ async function submitForm(formElement) {
         submitButton.textContent = '保存';
     }
 }
+
+// 新增：加载分类列表并填充到 datalist
+async function loadCategories() {
+    try {
+        const response = await fetch('/api/categories');
+        if (!response.ok) {
+            console.error('无法加载分类列表');
+            return;
+        }
+        const categories = await response.json();
+        const datalist = document.getElementById('category-list');
+        if (datalist) {
+            const fragment = document.createDocumentFragment();
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                fragment.appendChild(option);
+            });
+            datalist.innerHTML = ''; // 先清空旧的列表
+            datalist.appendChild(fragment);
+        }
+    } catch (error) {
+        console.error('加载分类列表时出错:', error);
+    }
+}
+
 
 // 初始化表单处理
 function initForm() {
@@ -133,4 +162,8 @@ function initForm() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', initForm);
+// 更新：页面加载完成后，除了初始化表单，还要加载分类列表
+document.addEventListener('DOMContentLoaded', () => {
+    initForm();
+    loadCategories();
+});
