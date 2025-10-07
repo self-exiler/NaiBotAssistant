@@ -6,7 +6,6 @@
     <meta name="description" content="NovelAI提示词组合助手 - 词条录入">
     <title>词条录入 - NovelAI提示词组合助手</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
-    <!-- 优化点：使用 defer 加快页面渲染 -->
     <script src="{{ url_for('static', filename='js/entryInput.js') }}" defer></script>
 </head>
 <body>
@@ -24,7 +23,8 @@
                        required 
                        placeholder="输入或选择一个已有的分类"
                        aria-required="true"
-                       list="category-list">
+                       list="category-list"
+                       autocomplete="off">
                 <datalist id="category-list"></datalist>
                 <div class="form-help" id="categoryHelp"></div>
             </div>
@@ -77,3 +77,4 @@
     </footer>
 </body>
 </html>
+

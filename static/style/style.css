@@ -131,19 +131,22 @@ input.error {
 }
 
 /* 消息提示 */
-.status-message, .form-help, #msg {
+.status-message, .form-help {
     min-height: 1.5em;
     font-size: 0.9em;
     font-weight: 500;
-    padding: 0.375rem;
     border-radius: var(--border-radius);
     transition: all 0.2s ease;
+}
+
+.status-message {
+    padding: 0.375rem;
     text-align: center;
 }
 
 .form-help {
     text-align: left;
-    padding: 0;
+    padding: 0.25rem 0;
     color: var(--text-muted);
 }
 
@@ -152,10 +155,18 @@ input.error {
     background-color: var(--success-color);
 }
 
+/* 之前 .form-help.error 的样式，现在统一到 .error */
 .status-message.error, #msg.error, .form-help.error, .error-message {
+    color: var(--error-color);
+    background-color: transparent;
+    font-weight: bold;
+}
+/* #msg 的错误样式需要背景色 */
+#msg.error {
     color: #fff;
     background-color: var(--error-color);
 }
+
 
 /* 新增：info 和 warning 样式 */
 .status-message.info {
@@ -333,14 +344,14 @@ td input:focus { border-color: var(--primary-color); background: #fff; }
     width: 1.5em;
     height: 1.5em;
     margin: -0.75em 0 0 -0.75em;
-    border: 3px solid var(--border-color);
-    border-top-color: var(--primary-color);
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    border-top-color: #fff;
     border-radius: 50%;
     animation: loading-spin 0.8s infinite linear;
 }
 
 @keyframes loading-spin {
-    to { transform: rotate(3D0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .shake-message {
