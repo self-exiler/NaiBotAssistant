@@ -6,6 +6,8 @@
     <meta name="description" content="NovelAI提示词组合助手 - 词条录入">
     <title>词条录入 - NovelAI提示词组合助手</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
+    <!-- 先加载公共脚本，再加载页面专属脚本 -->
+    <script src="{{ url_for('static', filename='js/common.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/entryInput.js') }}" defer></script>
 </head>
 <body>
@@ -77,4 +79,3 @@
     </footer>
 </body>
 </html>
-

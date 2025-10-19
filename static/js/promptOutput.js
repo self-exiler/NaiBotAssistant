@@ -12,48 +12,11 @@ const UI = {
     MESSAGES: {
         COPY_SUCCESS: '已复制到剪贴板',
         COPY_FAILED: '复制失败，请手动复制',
-        FETCH_ERROR: '获取数据失败，请重试',
         NO_CONTENT: '请先选择要复制的内容',
         CATEGORY_LOAD_ERROR: '加载分类失败',
         TERMS_LOAD_ERROR: '加载词条失败'
     }
 };
-
-// 防抖函数
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
-
-// 修复点：创建了一个新的消息显示函数
-function showMessage(message, type = 'info') {
-    const msgElement = document.getElementById('promptMessage');
-    if (!msgElement) return;
-
-    // 清除之前的定时器，防止消息过早消失
-    clearTimeout(msgElement.timeoutId);
-
-    msgElement.textContent = message;
-    // 根据类型设置样式
-    msgElement.className = `status-message ${type}`;
-    // 添加抖动动画
-    msgElement.classList.add('shake-message');
-    
-    // 动画结束后移除动画类，以便下次可以重新触发
-    msgElement.addEventListener('animationend', () => {
-        msgElement.classList.remove('shake-message');
-    }, { once: true });
-    
-    // 3秒后自动清除消息
-    msgElement.timeoutId = setTimeout(() => {
-        msgElement.textContent = '';
-        msgElement.className = 'status-message';
-    }, 3000);
-}
-
 
 // 健壮的复制函数
 async function copyToClipboard(text) {
@@ -84,23 +47,12 @@ async function copyToClipboard(text) {
     }
 }
 
-
-// API 请求函数
-async function fetchAPI(url) {
-    const response = await fetch(url);
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ msg: UI.MESSAGES.FETCH_ERROR }));
-        throw new Error(errorData.msg || response.statusText);
-    }
-    return response.json();
-}
-
 async function fetchCategories() {
     try {
-        return await fetchAPI('/api/categories');
+        return await app.api.fetchAPI('/api/categories');
     } catch (error) {
         console.error('获取分类出错:', error);
-        showMessage(UI.MESSAGES.CATEGORY_LOAD_ERROR, 'error');
+        app.ui.showMessage('promptMessage', UI.MESSAGES.CATEGORY_LOAD_ERROR, 'error');
         return [];
     }
 }
@@ -110,12 +62,12 @@ async function fetchTerms(category) {
         return state.termsCache[category];
     }
     try {
-        const terms = await fetchAPI(`/api/terms/${encodeURIComponent(category)}`);
+        const terms = await app.api.fetchAPI(`/api/terms/${encodeURIComponent(category)}`);
         state.termsCache[category] = terms;
         return terms;
     } catch (error) {
         console.error('获取词条出错:', error);
-        showMessage(UI.MESSAGES.TERMS_LOAD_ERROR, 'error');
+        app.ui.showMessage('promptMessage', UI.MESSAGES.TERMS_LOAD_ERROR, 'error');
         return [];
     }
 }
@@ -134,14 +86,14 @@ async function initCategorySelect() {
         select.innerHTML = '';
         select.appendChild(fragment);
     } else {
-        showMessage('暂无可用分类', 'info');
+        app.ui.showMessage('promptMessage', '暂无可用分类', 'info');
     }
     
     select.disabled = false;
 }
 
-// 搜索过滤处理
-const handleSearch = debounce(function(searchTerm) {
+// 搜索过滤处理 (使用公共防抖函数)
+const handleSearch = app.utils.debounce(function(searchTerm) {
     state.searchTerm = searchTerm.toLowerCase().trim();
     const termList = document.getElementById('termList');
     const termItems = termList.querySelectorAll('label.term-item');
@@ -243,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
         state.selectedTerms.clear();
         document.querySelectorAll('#termList input:checked').forEach(cb => cb.checked = false);
         updateOutputText();
-        showMessage('已清除所有选中项', 'success');
+        app.ui.showMessage('promptMessage', '已清除所有选中项', 'success');
     });
 
     // 复制
@@ -252,18 +204,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const textToCopy = outputArea.value.trim();
         
         if (!textToCopy) {
-            showMessage(UI.MESSAGES.NO_CONTENT, 'warning');
+            app.ui.showMessage('promptMessage', UI.MESSAGES.NO_CONTENT, 'warning');
             return;
         }
 
         const success = await copyToClipboard(textToCopy);
 
         if (success) {
-            showMessage(UI.MESSAGES.COPY_SUCCESS, 'success');
+            app.ui.showMessage('promptMessage', UI.MESSAGES.COPY_SUCCESS, 'success');
         } else {
-            showMessage(UI.MESSAGES.COPY_FAILED, 'error');
-            outputArea.select(); // 失败时帮助用户手动复制
+            app.ui.showMessage('promptMessage', UI.MESSAGES.COPY_FAILED, 'error');
+            outputArea.select();
         }
     });
 });
-

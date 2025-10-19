@@ -6,7 +6,8 @@
     <meta name="description" content="NovelAI提示词组合助手 - 提示词输出">
     <title>提示词输出 - NovelAI提示词组合助手</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
-    <!-- 优化点：使用 defer 加快页面渲染 -->
+    <!-- 先加载公共脚本，再加载页面专属脚本 -->
+    <script src="{{ url_for('static', filename='js/common.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/promptOutput.js') }}" defer></script>
 </head>
 <body>
@@ -52,21 +53,20 @@
 
             <div class="button-group">
                 <button type="button" 
-                        id="clearBtn" 
-                        class="btn"
-                        aria-label="清除所有选中的词条">
-                    清除选中
-                </button>
-                <button type="button" 
                         id="copyBtn" 
                         class="btn"
                         aria-label="复制生成的提示词到剪贴板">
                     复制到剪贴板
                 </button>
+                <button type="button" 
+                        id="clearBtn" 
+                        class="btn"
+                        aria-label="清除所有选中的词条">
+                    清除选中
+                </button>
             </div>
 
-            <!-- 新增：专门用于显示通知的消息区域 -->
-            <div id="promptMessage" class="status-message" role="alert" aria-live="polite"></div>
+            <div id="promptMessage" role="alert" aria-live="polite"></div>
         </form>
     </main>
 
