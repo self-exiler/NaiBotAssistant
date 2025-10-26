@@ -18,38 +18,17 @@ const UI = {
     }
 };
 
-// 健壮的复制函数
-async function copyToClipboard(text) {
-    if (navigator.clipboard && window.isSecureContext) {
-        try {
-            await navigator.clipboard.writeText(text);
-            return true;
-        } catch (error) {
-            console.error("Clipboard API 失败，尝试后备方法:", error);
-        }
-    }
-
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.left = '-9999px';
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    try {
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textarea);
-        return successful;
-    } catch (err) {
-        console.error('后备的 execCommand 方法失败:', err);
-        document.body.removeChild(textarea);
-        return false;
-    }
-}
+/**
+ * [已移除] 复制函数，移至 common.js
+ */
+// async function copyToClipboard(text) { ... }
 
 async function fetchCategories() {
     try {
-        return await app.api.fetchAPI('/api/categories');
+        const categories = await app.api.fetchAPI('/api/categories');
+        // [修改] 增加拼音排序
+        categories.sort(new Intl.Collator('zh-CN-u-co-pinyin').compare);
+        return categories;
     } catch (error) {
         console.error('获取分类出错:', error);
         app.ui.showMessage('promptMessage', UI.MESSAGES.CATEGORY_LOAD_ERROR, 'error');
@@ -80,9 +59,18 @@ async function initCategorySelect() {
     const categories = await fetchCategories();
     if (categories.length > 0) {
         const fragment = document.createDocumentFragment();
-        const defaultOption = new Option('请选择分类', '');
+        // 默认选项
+        const defaultOption = document.createElement('option');
+        defaultOption.value = "";
+        defaultOption.textContent = "——请选择——";
         fragment.appendChild(defaultOption);
-        categories.forEach(category => fragment.appendChild(new Option(category, category)));
+        
+        categories.forEach(category => {
+             const option = document.createElement('option');
+             option.value = category;
+             option.textContent = category;
+             fragment.appendChild(option);
+        });
         select.innerHTML = '';
         select.appendChild(fragment);
     } else {
@@ -198,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
         app.ui.showMessage('promptMessage', '已清除所有选中项', 'success');
     });
 
-    // 复制
+    // [修改] 复制
     document.getElementById('copyBtn').addEventListener('click', async function() {
         const outputArea = document.getElementById('outputArea');
         const textToCopy = outputArea.value.trim();
@@ -208,7 +196,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const success = await copyToClipboard(textToCopy);
+        // [修改] 使用 common.js 中的函数
+        const success = await app.utils.copyToClipboard(textToCopy);
 
         if (success) {
             app.ui.showMessage('promptMessage', UI.MESSAGES.COPY_SUCCESS, 'success');

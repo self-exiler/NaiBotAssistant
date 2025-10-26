@@ -33,12 +33,15 @@ app.ui.showMessage = function(elementId, message, type = 'info') {
             msgElement.classList.remove('shake-message');
         }, { once: true });
     }
-    
-    // 3秒后自动清除消息
-    msgElement.timeoutId = setTimeout(() => {
-        msgElement.textContent = '';
-        msgElement.className = '';
-    }, 3000);
+
+    // 非 'info' 消息（如 success/error/warning）3秒后自动清除
+    // 'info' 消息（如“加载中”）应由调用者手动清除
+    if (type !== 'info') {
+        msgElement.timeoutId = setTimeout(() => {
+            msgElement.textContent = '';
+            msgElement.className = '';
+        }, 3000);
+    }
 };
 
 /**
@@ -72,6 +75,39 @@ app.utils.debounce = function(func, wait) {
     };
 };
 
+/**
+ * [新增] 健壮的复制函数 (从 promptOutput.js 移入)
+ * @param {string} text - 要复制的文本
+ * @returns {Promise<boolean>} - 是否复制成功
+ */
+app.utils.copyToClipboard = async function(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (error) {
+            console.error("Clipboard API 失败，尝试后备方法:", error);
+        }
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return successful;
+    } catch (err) {
+        console.error('后备的 execCommand 方法失败:', err);
+        document.body.removeChild(textarea);
+        return false;
+    }
+};
+
 
 /**
  * API 相关函数
@@ -85,10 +121,18 @@ app.utils.debounce = function(func, wait) {
  */
 app.api.fetchAPI = async function(url, options = {}) {
     const response = await fetch(url, options);
-    const result = await response.json();
+    
+    // 尝试解析JSON，即使响应失败也可能
+    let result;
+    try {
+        result = await response.json();
+    } catch(e) {
+        // 如果响应体为空或不是JSON
+        result = { msg: response.statusText || '响应体无效' };
+    }
 
     if (!response.ok) {
-        throw new Error(result.msg || '网络请求失败');
+        throw new Error(result.msg || `网络请求失败: ${response.status}`);
     }
     
     return result;

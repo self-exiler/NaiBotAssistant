@@ -8,6 +8,7 @@ from functools import wraps
 import traceback
 import threading
 import io
+from pypinyin import lazy_pinyin # 导入 pypinyin
 
 # 基础配置
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -124,7 +125,7 @@ def initialize_data():
 
     except orjson.JSONDecodeError as e:
         app.logger.error(f'JSON decode error in {DATA_FILE}: {str(e)}. Attempting to handle.')
-        backup_file = f'{DATA_FILE}.{datetime.now().strftime("%Y%m%d_%H%M%S")}.bak'
+        backup_file = f'{DATA_FILE}.{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}.bak' # <-- 修复：增加微秒
         try:
             os.rename(DATA_FILE, backup_file)
             app.logger.info(f'Created backup of corrupted file: {backup_file}')
@@ -141,11 +142,23 @@ def load_data():
         return orjson.loads(orjson.dumps(_data_cache))
 
 def save_data(data):
-    """更新内存缓存，并异步写入文件，使用锁保证线程安全"""
+    """[已修改] 更新内存缓存并写入文件，确保分类键按拼音排序。"""
     global _data_cache
     try:
         with _data_lock:
-            _data_cache = data
+            
+            # --- 新增：按分类名称拼音排序 ---
+            try:
+                # 1. 按 pinyin 排序分类键
+                sorted_categories = sorted(data.keys(), key=lambda k: lazy_pinyin(k))
+                # 2. 创建一个新的字典，保持排序
+                sorted_data = {category: data[category] for category in sorted_categories}
+            except Exception as sort_e:
+                app.logger.error(f"Failed to sort categories by pinyin: {sort_e}. Saving in default order.")
+                sorted_data = data # 回退到未排序状态
+            # --- 结束 ---
+
+            _data_cache = sorted_data # [修改] 保存排序后的数据到缓存
             
             backup_path = os.path.join(BASE_DIR, 'backups')
             if not os.path.exists(backup_path):
@@ -153,18 +166,25 @@ def save_data(data):
 
             # Create a backup before saving new data
             if os.path.exists(DATA_FILE):
-                backup_file = os.path.join(backup_path, f'data_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json.bak')
-                os.rename(DATA_FILE, backup_file)
-                app.logger.info(f'Created backup: {backup_file}')
+                # [已修复] 增加 %f (微秒) 来确保备份文件名唯一
+                backup_file = os.path.join(backup_path, f'data_{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}.json.bak')
+                try:
+                    os.rename(DATA_FILE, backup_file)
+                    app.logger.info(f'Created backup: {backup_file}')
+                except Exception as e:
+                    # 捕获重命名失败，但允许继续写入（覆盖原文件）
+                    app.logger.error(f"Failed to create backup: {e}. Proceeding with save...")
+
             
             with open(DATA_FILE, 'wb') as f:
-                f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS))
+                # [修改] 写入排序后的数据
+                f.write(orjson.dumps(sorted_data, option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS)) 
             
-            app.logger.info('Data cache updated and saved to file.')
+            app.logger.info('Data cache updated, sorted by category, and saved to file.')
         return True
     except Exception as e:
         app.logger.error(f'Error saving data: {str(e)}')
-        raise
+        raise # 重新引发异常，以便 handle_errors 能捕获它
 
 # -------------------- 路由 --------------------
 @app.route('/')
@@ -213,7 +233,7 @@ def add_entry():
     else:
         data[category].append({'term': term, 'trans': trans, 'note': note})
 
-    save_data(data)
+    save_data(data) # [说明] 调用 save_data 时，分类会自动排序
     return jsonify({'status': 'ok'})
 
 # 数据备份
@@ -225,7 +245,7 @@ def backup_data():
     return send_file(
         io.BytesIO(data_to_backup),
         as_attachment=True,
-        download_name=f'data_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json',
+        download_name=f'data_backup_{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}.json', # <-- 修复：增加微秒
         mimetype='application/json'
     )
 
@@ -234,7 +254,7 @@ def backup_data():
 @handle_errors
 def api_categories():
     data = load_data()
-    return jsonify(list(data.keys()))
+    return jsonify(list(data.keys())) # [说明] data.keys() 已经由 save_data 保证了顺序
 
 @app.route('/api/terms/<category>')
 @handle_errors
@@ -248,22 +268,90 @@ def api_terms(category):
 def api_get_data():
     """获取扁平化的词条列表供批量编辑器使用"""
     data = load_data()
-    # 将嵌套字典转换为扁平列表
-    arr = [{'category': cat, **item} for cat, items in data.items() for item in items]
+    category_filter = request.args.get('category') 
+
+    if category_filter and category_filter in data:
+        data_to_flatten = {category_filter: data[category_filter]}
+    elif category_filter:
+        data_to_flatten = {} 
+    else:
+        data_to_flatten = {} 
+
+    arr = [{'category': cat, **item} for cat, items in data_to_flatten.items() for item in items]
     return jsonify(arr)
 
 @app.route('/api/data', methods=['POST'])
 @handle_errors
 def api_save_data():
-    """接收前端发送的嵌套结构数据并保存"""
-    data = request.get_json(force=True)
-    if not isinstance(data, dict):
-        return jsonify({'status': 'error', 'msg': '无效的数据格式'})
+    """
+    接收前端发送的 *部分* 嵌套结构数据（仅含当前编辑的分类），
+    并将其 *合并* 到完整数据中，然后保存。
+    """
+    partial_data = request.get_json(force=True)
+    if not isinstance(partial_data, dict):
+        return jsonify({'status': 'error', 'msg': '无效的数据格式'}), 400
     
-    # 可在此处添加更复杂的数据验证逻辑
-    
-    save_data(data)
-    return jsonify({'status': 'ok'})
+    if not partial_data:
+        app.logger.warning("Received empty data for merge, proceeding.")
+
+    try:
+        full_data = load_data()
+        
+        for category, items in partial_data.items():
+            if not isinstance(items, list):
+                return jsonify({'status': 'error', 'msg': f'分类 {category} 的数据格式无效'}), 400
+            
+            valid_items = [item for item in items if item.get('term') and item.get('term').strip()]
+            
+            full_data[category] = valid_items
+            
+            if not valid_items:
+                if category in full_data:
+                    del full_data[category]
+                    app.logger.info(f"Category '{category}' removed as it became empty.")
+
+
+        save_data(full_data) # [说明] 调用 save_data 时，分类会自动排序
+        return jsonify({'status': 'ok', 'msg': '数据合并成功'})
+    except Exception as e:
+        app.logger.error(f'Error merging data: {str(e)}')
+        return jsonify({'status': 'error', 'msg': '保存数据时发生内部错误'}), 500
+
+# --- 后端排序API ---
+@app.route('/api/sort', methods=['POST'])
+@handle_errors
+def api_sort_category():
+    """
+    对指定分类的词条按 'term' (拼音) 排序并保存。
+    """
+    payload = request.get_json(force=True)
+    category_to_sort = payload.get('category')
+
+    if not category_to_sort:
+        return jsonify({'status': 'error', 'msg': '未提供分类名称'}), 400
+
+    try:
+        full_data = load_data()
+        
+        if category_to_sort not in full_data or not full_data[category_to_sort]:
+            return jsonify({'status': 'error', 'msg': '分类不存在或为空'}), 404
+            
+        sorted_items = sorted(
+            full_data[category_to_sort], 
+            key=lambda item: lazy_pinyin(item.get('term', ''))
+        )
+        
+        full_data[category_to_sort] = sorted_items
+        
+        save_data(full_data) # [说明] 调用 save_data 时，分类会自动排序
+        
+        app.logger.info(f'Category "{category_to_sort}" sorted by pinyin successfully.')
+        return jsonify({'status': 'ok', 'msg': '拼音排序成功'})
+        
+    except Exception as e:
+        app.logger.error(f'Error sorting data: {str(e)}')
+        return jsonify({'status': 'error', 'msg': '排序时发生内部错误'}), 500
+
 
 if __name__ == '__main__':
     # 生产环境应使用 run_server.py

@@ -16,10 +16,18 @@
     </header>
 
     <main class="editor-container">
-        <div class="editor-toolbar">
+        <!-- 修改：添加分类选择器 -->
+        <div class="editor-toolbar" style="flex-direction: column; align-items: stretch;">
+            <div class="form-group" style="max-width: 400px; margin: 0 auto; text-align: left;">
+                <label for="categorySelect">选择要编辑的分类：</label>
+                <select id="categorySelect">
+                    <option value="">—— 请选择一个分类 ——</option>
+                </select>
+            </div>
             <button id="saveToServerTop" 
                     class="btn"
-                    aria-label="保存所有更改到服务器">
+                    aria-label="保存所有更改到服务器"
+                    style="margin-top: 10px;">
                 保存更改
             </button>
         </div>

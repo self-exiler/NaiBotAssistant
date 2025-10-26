@@ -18,14 +18,10 @@ const validationRules = {
     }
 };
 
-// 防抖函数
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
+/**
+ * [已移除] 防抖函数，使用 common.js 中的 app.utils.debounce
+ */
+// function debounce(func, wait) { ... }
 
 // 验证单个字段
 function validateField(fieldName, value) {
@@ -44,48 +40,40 @@ function validateField(fieldName, value) {
     return ''; // 无错误
 }
 
-// 显示消息（合并了验证和状态消息）
-function showMessage(elementId, message, type = 'info') {
-    const msgElement = document.getElementById(elementId);
-    if (!msgElement) return;
+/**
+ * [已移除] 显示消息函数，使用 common.js 中的 app.ui.showMessage
+ */
+// function showMessage(elementId, message, type = 'info') { ... }
 
-    clearTimeout(msgElement.timeoutId);
-    
-    msgElement.textContent = message;
-    msgElement.className = `${type}-message`; // 使用更通用的类名
-    
-    if (type === 'success' || type === 'error') {
-        msgElement.timeoutId = setTimeout(() => {
-            msgElement.textContent = '';
-            msgElement.className = '';
-        }, 3000);
-    }
-}
 
 // 提交表单数据
 async function submitForm(formElement) {
     const submitButton = formElement.querySelector('button[type="submit"]');
     try {
-        submitButton.disabled = true;
-        submitButton.textContent = '保存中...';
+        // [修改] 使用 app.ui.setLoading 来管理按钮状态
+        app.ui.setLoading(true, 'button[type="submit"]');
         
         const response = await fetch('/api/add_entry', {
             method: 'POST',
             body: new FormData(formElement)
         });
 
+        // [修改] 使用 app.api.fetchAPI (虽然这里是 FormData，但为了错误处理一致性，我们手动解析)
         const result = await response.json();
         
         if (!response.ok || result.status !== 'ok') {
             throw new Error(result.msg || '网络请求失败');
         }
         
-        showMessage('msg', '保存成功', 'success');
+        // [修改] 使用 app.ui.showMessage
+        app.ui.showMessage('msg', '保存成功', 'success');
         formElement.reset();
         formElement.querySelector('input').focus(); // 成功后聚焦第一个输入框
+        
         // 清除所有验证消息
         Object.keys(validationRules).forEach(fieldName => {
-            showMessage(`${fieldName}Help`, '', 'info');
+            // [修改] 使用 app.ui.showMessage
+            app.ui.showMessage(`${fieldName}Help`, '', 'info'); 
         });
 
         // 成功提交后重新加载分类，以便新分类能出现在下拉列表中
@@ -93,22 +81,23 @@ async function submitForm(formElement) {
 
     } catch (error) {
         console.error('提交表单出错:', error);
-        showMessage('msg', error.message, 'error');
+        // [修改] 使用 app.ui.showMessage
+        app.ui.showMessage('msg', error.message, 'error');
     } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = '保存';
+        // [修改] 使用 app.ui.setLoading
+        app.ui.setLoading(false, 'button[type="submit"]');
     }
 }
 
-// 新增：加载分类列表并填充到 datalist
+// [修改] 加载分类列表并填充到 datalist
 async function loadCategories() {
     try {
-        const response = await fetch('/api/categories');
-        if (!response.ok) {
-            console.error('无法加载分类列表');
-            return;
-        }
-        const categories = await response.json();
+        // [修改] 使用 app.api.fetchAPI
+        const categories = await app.api.fetchAPI('/api/categories');
+        
+        // [修改] 增加拼音排序
+        categories.sort(new Intl.Collator('zh-CN-u-co-pinyin').compare);
+
         const datalist = document.getElementById('category-list');
         if (datalist) {
             const fragment = document.createDocumentFragment();
@@ -122,6 +111,8 @@ async function loadCategories() {
         }
     } catch (error) {
         console.error('加载分类列表时出错:', error);
+        // [修改] 可以选择在 help 区域显示错误
+        app.ui.showMessage('categoryHelp', '分类列表加载失败', 'error');
     }
 }
 
@@ -132,11 +123,14 @@ function initForm() {
     if (!form) return;
 
     // 实时字段验证
-    form.addEventListener('input', debounce((event) => {
+    // [修改] 使用 app.utils.debounce
+    form.addEventListener('input', app.utils.debounce((event) => {
         const field = event.target;
         if (field.name && validationRules[field.name]) {
             const errorMessage = validateField(field.name, field.value);
-            showMessage(`${field.id}Help`, errorMessage, 'error');
+            // [修改] 使用 app.ui.showMessage
+            // 'help' 消息应该被视为 'error' 类型（如果它有内容）
+            app.ui.showMessage(`${field.id}Help`, errorMessage, errorMessage ? 'error' : 'info');
         }
     }, 300));
 
@@ -149,7 +143,8 @@ function initForm() {
             const field = this.elements[fieldName];
             if (field) {
                 const errorMessage = validateField(fieldName, field.value);
-                showMessage(`${field.id}Help`, errorMessage, 'error');
+                // [修改] 使用 app.ui.showMessage
+                app.ui.showMessage(`${field.id}Help`, errorMessage, errorMessage ? 'error' : 'info');
                 if (errorMessage) isFormValid = false;
             }
         });
@@ -157,7 +152,8 @@ function initForm() {
         if (isFormValid) {
             submitForm(this);
         } else {
-            showMessage('msg', '请检查输入内容', 'error');
+            // [修改] 使用 app.ui.showMessage
+            app.ui.showMessage('msg', '请检查输入内容', 'error');
         }
     });
 }
