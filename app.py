@@ -270,12 +270,10 @@ def api_get_data():
     data = load_data()
     category_filter = request.args.get('category') 
 
+    # [精简] 优化逻辑：只有当分类存在时才准备数据，否则返回空
+    data_to_flatten = {}
     if category_filter and category_filter in data:
         data_to_flatten = {category_filter: data[category_filter]}
-    elif category_filter:
-        data_to_flatten = {} 
-    else:
-        data_to_flatten = {} 
 
     arr = [{'category': cat, **item} for cat, items in data_to_flatten.items() for item in items]
     return jsonify(arr)
@@ -354,7 +352,6 @@ def api_sort_category():
 
 
 if __name__ == '__main__':
-    # 生产环境应使用 run_server.py
     initialize_data()
     port = get_port_from_config()
     app.run(debug=True,port=port)
