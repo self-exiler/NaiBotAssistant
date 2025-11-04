@@ -209,13 +209,14 @@ app.api.fetchAPI = async function(url, options = {}) {
 
 /**
  * [新增] 获取并按拼音排序分类列表
+ * [修改] 移除冗余的客户端排序，后端已保证顺序
  * @returns {Promise<string[]>} - 排序后的分类数组
  */
 app.api.fetchSortedCategories = async function() {
     try {
         const categories = await app.api.fetchAPI('/api/categories');
-        // 按拼音排序
-        categories.sort(new Intl.Collator('zh-CN-u-co-pinyin').compare);
+        // 移除: categories.sort(new Intl.Collator('zh-CN-u-co-pinyin').compare);
+        // 后端已保证排序
         return categories;
     } catch (error) {
         console.error('获取分类出错:', error);

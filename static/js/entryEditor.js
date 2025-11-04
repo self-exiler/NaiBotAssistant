@@ -225,67 +225,7 @@ function convertToNested(data) {
     }, {});
 }
 
-/**
- * [已修改] 排序并保存功能
- * 现在会先保存，再排序，再刷新
- */
-async function sortAndSave() {
-    const currentCategory = document.getElementById('categorySelect')?.value;
-    if (!currentCategory) {
-        app.ui.showMessage('msg', '未选择分类', 'error');
-        return;
-    }
-    
-    if (!state.data.length || (state.data.length === 1 && !state.data[0].term)) {
-        app.ui.showMessage('msg', '没有可排序的数据', 'warning');
-        return;
-    }
-    
-    if (!confirm(`确定要对分类 "${currentCategory}" 按“词条”拼音排序吗？\n\n(注意：排序前会先保存您在表格中的所有更改，包括跨分类移动。)`)) {
-         return;
-    }
-    
-    try {
-        app.ui.setLoading(true);
-
-        // 步骤 1: 保存所有 pending 的更改
-        app.ui.showMessage('msg', '步骤 1/3: 正在保存更改...', 'info');
-        const nestedData = convertToNested(state.data);
-        const saveResult = await app.api.fetchAPI('/api/data', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(nestedData)
-        });
-        if (saveResult.status !== 'ok') {
-            throw new Error('保存更改失败: ' + (saveResult.msg || '未知错误'));
-        }
-
-        // 步骤 2: 调用后端排序 API
-        app.ui.showMessage('msg', '步骤 2/3: 正在请求排序...', 'info');
-        const sortResult = await app.api.fetchAPI('/api/sort', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ category: currentCategory })
-        });
-        if (sortResult.status !== 'ok') {
-            throw new Error('排序失败: ' + (sortResult.msg || '未知错误'));
-        }
-        
-        // 步骤 3: 刷新分类列表和当前分类数据
-        app.ui.showMessage('msg', '步骤 3/3: 正在刷新数据...', 'info');
-        // [修改] 调用公共函数
-        await app.ui.populateCategorySelect('categorySelect', '—— 请选择一个分类 ——'); 
-        await loadData(currentCategory); // 刷新当前表格
-        
-        app.ui.showMessage('msg', '排序并保存成功', 'success');
-
-    } catch (error) {
-        console.error('Error sorting and saving data:', error);
-        app.ui.showMessage('msg', `操作失败: ${error.message}`, 'error');
-    } finally {
-        app.ui.setLoading(false);
-    }
-}
+// [已删除] sortAndSave 函数
 
 
 // [已修改] 保存到服务器
@@ -296,7 +236,7 @@ async function saveToServer() {
         return;
     }
 
-    if (!confirm(`确定要保存当前表格中的所有更改吗？\n\n(这会更新表格中涉及的所有分类，并允许跨分类移动。)`)) {
+    if (!confirm(`确定要保存当前表格中的所有更改吗？\n\n(注意：词条将按拼音自动排序。)`)) {
          app.ui.showMessage('msg', '保存已取消', 'info');
          return;
     }
@@ -307,22 +247,28 @@ async function saveToServer() {
         // 1. 转换当前表格中所有数据（可能包含多个分类）
         const nestedData = convertToNested(state.data);
         
-        // 2. 发送到 /api/data，后端将执行合并
+        // --- [修改] ---
+        // 2. 创建新的 payload，同时包含编辑器数据和当前加载的分类
+        const payload = {
+            loadedCategory: currentCategory,
+            editorData: nestedData
+        };
+        // --- [结束修改] ---
+
+        // 3. 发送到 /api/data，后端将执行智能合并
         const result = await app.api.fetchAPI('/api/data', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(nestedData)
+            body: JSON.stringify(payload) // [修改] 发送新的 payload
         });
         
         if (result.status === 'ok') {
-            app.ui.showMessage('msg', UI.MESSAGES.SAVE_SUCCESS + ' (分类列表已更新)', 'success');
+            app.ui.showMessage('msg', UI.MESSAGES.SAVE_SUCCESS + ' (词条已自动排序)', 'success');
             
-            // 3. 刷新分类列表（因为可能创建了新分类）
-            // [修改] 调用公共函数
+            // 4. 刷新分类列表（因为可能创建了新分类）
             await app.ui.populateCategorySelect('categorySelect', '—— 请选择一个分类 ——');
             
-            // 4. 重新加载当前选中的分类的数据
-            // （被移动走的词条会消失，新移入的词条...不会在这里显示，除非用户切换分类）
+            // 5. 重新加载当前选中的分类的数据
             await loadData(currentCategory);
         } else {
             throw new Error(result.msg || UI.MESSAGES.SAVE_ERROR);
@@ -340,7 +286,7 @@ window.addEventListener('DOMContentLoaded', function() {
     document.getElementById('saveToServer')?.addEventListener('click', saveToServer);
     document.getElementById('saveToServerTop')?.addEventListener('click', saveToServer);
     document.getElementById('addRow')?.addEventListener('click', addRow);
-    document.getElementById('sortAndSaveBtn')?.addEventListener('click', sortAndSave);
+    // [已删除] 排序按钮的事件监听器
     
     const categorySelect = document.getElementById('categorySelect');
     if (categorySelect) {

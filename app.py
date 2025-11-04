@@ -281,98 +281,101 @@ def api_get_data():
 @app.route('/api/data', methods=['POST'])
 @handle_errors
 def api_save_data():
-    """
-    接收前端发送的 *部分* 嵌套结构数据（仅含当前编辑的分类），
-    并将其 *合并* 到完整数据中，然后保存。
-    """
-    partial_data = request.get_json(force=True)
-    if not isinstance(partial_data, dict):
-        return jsonify({'status': 'error', 'msg': '无效的数据格式'}), 400
+
     
-    if not partial_data:
-        app.logger.warning("Received empty data for merge, proceeding.")
+    payload = request.get_json(force=True)
+    
+    # 1. 解包
+    partial_data = payload.get('editorData') # 这是编辑器里的数据
+    loaded_category = payload.get('loadedCategory') # 这是用户加载的分类
+
+    if not isinstance(partial_data, dict) or not loaded_category:
+        return jsonify({'status': 'error', 'msg': '无效的数据格式 (缺少 editorData 或 loadedCategory)'}), 400
 
     try:
         full_data = load_data()
         
-        # 1. 收集所有当前编辑的词条，用于后续的去重处理
-        all_current_terms = set()
+        # 2. 提取编辑器中的所有词条 (terms)，用于后续的去重
+        terms_in_editor = set()
         for items in partial_data.values():
             if isinstance(items, list):
                 for item in items:
                     if item.get('term') and item.get('term').strip():
-                        all_current_terms.add(item['term'].strip())
+                        terms_in_editor.add(item['term'].strip())
         
-        # 2. 从所有分类中移除当前编辑的词条（因为它们可能被移动到其他分类）
+        # 3. 清理数据库 (full_data)
+        # 遍历数据库中的 *所有* 分类
         for category in list(full_data.keys()):
-            if category not in partial_data:  # 只处理不在当前编辑中的分类
-                filtered_items = []
-                for item in full_data[category]:
-                    if item['term'] not in all_current_terms:
-                        filtered_items.append(item)
-                
-                if filtered_items:
-                    full_data[category] = filtered_items
-                else:
-                    # 如果分类为空，则删除该分类
-                    del full_data[category]
-                    app.logger.info(f"Category '{category}' removed as it became empty.")
-        
-        # 3. 处理当前编辑的分类
-        for category, items in partial_data.items():
-            if not isinstance(items, list):
-                return jsonify({'status': 'error', 'msg': f'分类 {category} 的数据格式无效'}), 400
             
-            valid_items = [item for item in items if item.get('term') and item.get('term').strip()]
-            
-            if valid_items:
-                full_data[category] = valid_items
-            elif category in full_data:
-                # 如果分类为空，则删除该分类
-                del full_data[category]
-                app.logger.info(f"Category '{category}' removed as it became empty.")
+            # 规则 A：如果这个分类是用户加载的分类 (loadedCategory)
+            # 我们无条件地清空它在数据库中的版本，
+            # 因为编辑器里的数据 (partial_data) 即将成为它的新内容。
+            if category == loaded_category:
+                full_data[category] = [] # 清空
+                continue # 继续处理下一个分类
 
-        save_data(full_data) # [说明] 调用 save_data 时，分类会自动排序
-        return jsonify({'status': 'ok', 'msg': '数据合并成功'})
+            # 规则 B：如果这个分类 *不是* 加载的分类 (例如 "分类B")
+            # 我们需要清理掉那些“即将被移动过来”的词条的旧版本（以防万一）
+            # (虽然在这个UI下，这步主要用于清理被移走的词条)
+            original_items = full_data.get(category, [])
+            filtered_items = [
+                item for item in original_items 
+                if item.get('term') not in terms_in_editor
+            ]
+            
+            if not filtered_items:
+                if category in full_data: del full_data[category]
+            else:
+                full_data[category] = filtered_items
+
+        # 4. 合并编辑器数据 (partial_data) 回 数据库 (full_data)
+        for category, items in partial_data.items():
+            
+            # 提取编辑器中这个分类的有效词条
+            new_items_from_editor = [
+                item for item in items 
+                if item.get('term') and item.get('term').strip()
+            ]
+
+            if not new_items_from_editor:
+                # 如果编辑器里这个分类是空的（例如 "分类A" 被删光了）
+                # 在步骤3中它已经被清空了 (full_data[category] = [])，这里不用操作
+                continue
+
+            # 获取数据库中该分类的“幸存”词条
+            # - 如果是 "分类A" (loaded_category)，existing_items 为 [] (已在步骤3中清空)
+            # - 如果是 "分类B" (移动目标)，existing_items 为 [B1, B2, B3...] (已在步骤3中清理)
+            existing_items = full_data.get(category, [])
+            
+            # 合并！
+            combined_items = existing_items + new_items_from_editor
+            
+            # 排序并存回 full_data
+            try:
+                sorted_items = sorted(
+                    combined_items, 
+                    key=lambda item: lazy_pinyin(item.get('term', ''))
+                )
+                full_data[category] = sorted_items
+                app.logger.info(f"Category '{category}' merged and sorted.")
+            except Exception as sort_e:
+                app.logger.error(f"Failed to sort items for category '{category}': {sort_e}")
+                full_data[category] = combined_items # 回退
+
+        # 5. 对于在 partial_data 中根本没出现、但在步骤3中被清空的 loaded_category
+        # (例如，用户加载"A"，然后删掉了所有行，又添加了一个"B"行)
+        # 我们需要确保"A"被正确删除
+        if loaded_category not in partial_data and loaded_category in full_data:
+             if not full_data[loaded_category]: # 确认它在步骤3中被清空
+                del full_data[loaded_category]
+                app.logger.info(f"Loaded category '{loaded_category}' removed as it's no longer in editor.")
+
+
+        save_data(full_data) # [说明] save_data 会自动对*分类*进行排序
+        return jsonify({'status': 'ok', 'msg': '数据合并并自动排序成功'})
     except Exception as e:
         app.logger.error(f'Error merging data: {str(e)}')
         return jsonify({'status': 'error', 'msg': '保存数据时发生内部错误'}), 500
-
-# --- 后端排序API ---
-@app.route('/api/sort', methods=['POST'])
-@handle_errors
-def api_sort_category():
-    """
-    对指定分类的词条按 'term' (拼音) 排序并保存。
-    """
-    payload = request.get_json(force=True)
-    category_to_sort = payload.get('category')
-
-    if not category_to_sort:
-        return jsonify({'status': 'error', 'msg': '未提供分类名称'}), 400
-
-    try:
-        full_data = load_data()
-        
-        if category_to_sort not in full_data or not full_data[category_to_sort]:
-            return jsonify({'status': 'error', 'msg': '分类不存在或为空'}), 404
-            
-        sorted_items = sorted(
-            full_data[category_to_sort], 
-            key=lambda item: lazy_pinyin(item.get('term', ''))
-        )
-        
-        full_data[category_to_sort] = sorted_items
-        
-        save_data(full_data) # [说明] 调用 save_data 时，分类会自动排序
-        
-        app.logger.info(f'Category "{category_to_sort}" sorted by pinyin successfully.')
-        return jsonify({'status': 'ok', 'msg': '拼音排序成功'})
-        
-    except Exception as e:
-        app.logger.error(f'Error sorting data: {str(e)}')
-        return jsonify({'status': 'error', 'msg': '排序时发生内部错误'}), 500
-
 
 if __name__ == '__main__':
     initialize_data()
