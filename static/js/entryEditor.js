@@ -273,7 +273,8 @@ async function sortAndSave() {
         
         // 步骤 3: 刷新分类列表和当前分类数据
         app.ui.showMessage('msg', '步骤 3/3: 正在刷新数据...', 'info');
-        await loadCategories(); // 刷新分类列表
+        // [修改] 调用公共函数
+        await app.ui.populateCategorySelect('categorySelect', '—— 请选择一个分类 ——'); 
         await loadData(currentCategory); // 刷新当前表格
         
         app.ui.showMessage('msg', '排序并保存成功', 'success');
@@ -317,7 +318,8 @@ async function saveToServer() {
             app.ui.showMessage('msg', UI.MESSAGES.SAVE_SUCCESS + ' (分类列表已更新)', 'success');
             
             // 3. 刷新分类列表（因为可能创建了新分类）
-            await loadCategories();
+            // [修改] 调用公共函数
+            await app.ui.populateCategorySelect('categorySelect', '—— 请选择一个分类 ——');
             
             // 4. 重新加载当前选中的分类的数据
             // （被移动走的词条会消失，新移入的词条...不会在这里显示，除非用户切换分类）
@@ -332,43 +334,6 @@ async function saveToServer() {
         app.ui.setLoading(false);
     }
 }
-
-// [已修改] 加载分类列表
-// (现在会记住并恢复当前选中的值)
-async function loadCategories() {
-    try {
-        const categories = await app.api.fetchAPI('/api/categories');
-        const select = document.getElementById('categorySelect');
-        if (select) {
-            const currentVal = select.value; // 1. 记住当前选中的值
-
-            select.innerHTML = ''; // 2. 清空所有选项
-
-            const fragment = document.createDocumentFragment();
-            // 3. 添加默认选项
-            const defaultOption = document.createElement('option');
-            defaultOption.value = "";
-            defaultOption.textContent = "—— 请选择一个分类 ——";
-            fragment.appendChild(defaultOption);
-
-            // 4. 添加排序后的分类
-            categories.sort(new Intl.Collator('zh-CN-u-co-pinyin').compare);
-            categories.forEach(cat => {
-                 const option = document.createElement('option');
-                 option.value = cat;
-                 option.textContent = cat;
-                 fragment.appendChild(option);
-            });
-            
-            select.appendChild(fragment);
-            select.value = currentVal; // 5. 恢复选中的值
-        }
-    } catch (error) {
-        console.error('Error loading categories:', error);
-        app.ui.showMessage('msg', '加载分类列表失败', 'error');
-    }
-}
-
 
 // 初始化
 window.addEventListener('DOMContentLoaded', function() {
@@ -425,6 +390,17 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    loadCategories();
+    // [修改] 增加 async init 函数来捕获初始加载错误
+    async function initPage() {
+        try {
+            await app.ui.populateCategorySelect('categorySelect', '—— 请选择一个分类 ——');
+        } catch (error) {
+            // 在主消息区域显示错误
+            app.ui.showMessage('msg', error.message, 'error');
+            console.error(error);
+        }
+    }
+    
+    initPage(); // 调用 init
     renderTable(); // 渲染空表头
 });

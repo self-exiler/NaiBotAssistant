@@ -18,11 +18,6 @@ const validationRules = {
     }
 };
 
-/**
- * [已移除] 防抖函数，使用 common.js 中的 app.utils.debounce
- */
-// function debounce(func, wait) { ... }
-
 // 验证单个字段
 function validateField(fieldName, value) {
     const rules = validationRules[fieldName];
@@ -39,12 +34,6 @@ function validateField(fieldName, value) {
     }
     return ''; // 无错误
 }
-
-/**
- * [已移除] 显示消息函数，使用 common.js 中的 app.ui.showMessage
- */
-// function showMessage(elementId, message, type = 'info') { ... }
-
 
 // 提交表单数据
 async function submitForm(formElement) {
@@ -77,7 +66,9 @@ async function submitForm(formElement) {
         });
 
         // 成功提交后重新加载分类，以便新分类能出现在下拉列表中
-        await loadCategories();
+        // [修改] 调用公共函数
+        // (这里的 try...catch 是 submitForm 自己的)
+        await app.ui.populateCategoryDatalist('category-list');
 
     } catch (error) {
         console.error('提交表单出错:', error);
@@ -88,34 +79,6 @@ async function submitForm(formElement) {
         app.ui.setLoading(false, 'button[type="submit"]');
     }
 }
-
-// [修改] 加载分类列表并填充到 datalist
-async function loadCategories() {
-    try {
-        // [修改] 使用 app.api.fetchAPI
-        const categories = await app.api.fetchAPI('/api/categories');
-        
-        // [修改] 增加拼音排序
-        categories.sort(new Intl.Collator('zh-CN-u-co-pinyin').compare);
-
-        const datalist = document.getElementById('category-list');
-        if (datalist) {
-            const fragment = document.createDocumentFragment();
-            categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category;
-                fragment.appendChild(option);
-            });
-            datalist.innerHTML = ''; // 先清空旧的列表
-            datalist.appendChild(fragment);
-        }
-    } catch (error) {
-        console.error('加载分类列表时出错:', error);
-        // [修改] 可以选择在 help 区域显示错误
-        app.ui.showMessage('categoryHelp', '分类列表加载失败', 'error');
-    }
-}
-
 
 // 初始化表单处理
 function initForm() {
@@ -160,6 +123,19 @@ function initForm() {
 
 // 更新：页面加载完成后，除了初始化表单，还要加载分类列表
 document.addEventListener('DOMContentLoaded', () => {
-    initForm();
-    loadCategories();
+    
+    // [修改] 增加 async init 函数来捕获初始加载错误
+    async function initPage() {
+        try {
+            // 调用公共函数
+            await app.ui.populateCategoryDatalist('category-list');
+        } catch (error) {
+            // 在 'categoryHelp' 区域显示错误
+            app.ui.showMessage('categoryHelp', error.message, 'error');
+            console.error(error);
+        }
+    }
+
+    initForm(); // 初始化表单事件
+    initPage(); // 异步加载 datalist
 });
