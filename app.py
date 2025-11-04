@@ -295,19 +295,42 @@ def api_save_data():
     try:
         full_data = load_data()
         
+        # 1. 收集所有当前编辑的词条，用于后续的去重处理
+        all_current_terms = set()
+        for items in partial_data.values():
+            if isinstance(items, list):
+                for item in items:
+                    if item.get('term') and item.get('term').strip():
+                        all_current_terms.add(item['term'].strip())
+        
+        # 2. 从所有分类中移除当前编辑的词条（因为它们可能被移动到其他分类）
+        for category in list(full_data.keys()):
+            if category not in partial_data:  # 只处理不在当前编辑中的分类
+                filtered_items = []
+                for item in full_data[category]:
+                    if item['term'] not in all_current_terms:
+                        filtered_items.append(item)
+                
+                if filtered_items:
+                    full_data[category] = filtered_items
+                else:
+                    # 如果分类为空，则删除该分类
+                    del full_data[category]
+                    app.logger.info(f"Category '{category}' removed as it became empty.")
+        
+        # 3. 处理当前编辑的分类
         for category, items in partial_data.items():
             if not isinstance(items, list):
                 return jsonify({'status': 'error', 'msg': f'分类 {category} 的数据格式无效'}), 400
             
             valid_items = [item for item in items if item.get('term') and item.get('term').strip()]
             
-            full_data[category] = valid_items
-            
-            if not valid_items:
-                if category in full_data:
-                    del full_data[category]
-                    app.logger.info(f"Category '{category}' removed as it became empty.")
-
+            if valid_items:
+                full_data[category] = valid_items
+            elif category in full_data:
+                # 如果分类为空，则删除该分类
+                del full_data[category]
+                app.logger.info(f"Category '{category}' removed as it became empty.")
 
         save_data(full_data) # [说明] 调用 save_data 时，分类会自动排序
         return jsonify({'status': 'ok', 'msg': '数据合并成功'})

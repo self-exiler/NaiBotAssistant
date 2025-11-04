@@ -58,6 +58,75 @@ app.ui.setLoading = function(loading, selector = '.btn') {
 
 
 /**
+ * [修改] 填充分类 <select> 下拉列表
+ * (移除内部的 try...catch, 让调用者处理错误)
+ * @param {string} elementId - <select> 元素的ID
+ * @param {string} defaultOptionText - 默认选项的提示文字 (例如 "——请选择——")
+ * @returns {Promise<void>}
+ */
+app.ui.populateCategorySelect = async function(elementId, defaultOptionText = "——请选择——") {
+    const select = document.getElementById(elementId);
+    if (!select) return;
+
+    const currentVal = select.value; // 1. 记住当前选中的值
+    select.disabled = true;
+    select.innerHTML = ''; // 2. 清空所有选项
+
+    const fragment = document.createDocumentFragment();
+    
+    // 3. 添加默认选项
+    const defaultOption = document.createElement('option');
+    defaultOption.value = "";
+    defaultOption.textContent = defaultOptionText;
+    fragment.appendChild(defaultOption);
+
+    try {
+        // 4. 获取并添加排序后的分类
+        // (如果 fetchSortedCategories 失败, 错误将抛出)
+        const categories = await app.api.fetchSortedCategories();
+        
+        categories.forEach(cat => {
+             const option = document.createElement('option');
+             option.value = cat;
+             option.textContent = cat;
+             fragment.appendChild(option);
+        });
+        
+        select.appendChild(fragment);
+        select.value = currentVal; // 5. 恢复选中的值 (如果还在列表中的话)
+        
+    } finally {
+        // 无论成功与否，都要启用 select
+        select.disabled = false;
+    }
+};
+
+/**
+ * [修改] 填充分类 <datalist>
+ * (移除内部的 try...catch, 让调用者处理错误)
+ * @param {string} elementId - <datalist> 元素的ID
+ * @returns {Promise<void>}
+ */
+app.ui.populateCategoryDatalist = async function(elementId) {
+    const datalist = document.getElementById(elementId);
+    if (!datalist) return;
+
+    // (如果 fetchSortedCategories 失败, 错误将抛出)
+    const categories = await app.api.fetchSortedCategories();
+    const fragment = document.createDocumentFragment();
+    
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        fragment.appendChild(option);
+    });
+    
+    datalist.innerHTML = ''; // 先清空旧的列表
+    datalist.appendChild(fragment);
+};
+
+
+/**
  * 工具函数
  */
 
@@ -136,4 +205,21 @@ app.api.fetchAPI = async function(url, options = {}) {
     }
     
     return result;
+};
+
+/**
+ * [新增] 获取并按拼音排序分类列表
+ * @returns {Promise<string[]>} - 排序后的分类数组
+ */
+app.api.fetchSortedCategories = async function() {
+    try {
+        const categories = await app.api.fetchAPI('/api/categories');
+        // 按拼音排序
+        categories.sort(new Intl.Collator('zh-CN-u-co-pinyin').compare);
+        return categories;
+    } catch (error) {
+        console.error('获取分类出错:', error);
+        // 向上抛出，让调用者处理UI提示
+        throw new Error('加载分类失败: ' + (error.message || '未知错误'));
+    }
 };

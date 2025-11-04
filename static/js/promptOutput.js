@@ -13,28 +13,10 @@ const UI = {
         COPY_SUCCESS: '已复制到剪贴板',
         COPY_FAILED: '复制失败，请手动复制',
         NO_CONTENT: '请先选择要复制的内容',
-        CATEGORY_LOAD_ERROR: '加载分类失败',
+        CATEGORY_LOAD_ERROR: '加载分类失败', // [修改] 加回错误消息
         TERMS_LOAD_ERROR: '加载词条失败'
     }
 };
-
-/**
- * [已移除] 复制函数，移至 common.js
- */
-// async function copyToClipboard(text) { ... }
-
-async function fetchCategories() {
-    try {
-        const categories = await app.api.fetchAPI('/api/categories');
-        // [修改] 增加拼音排序
-        categories.sort(new Intl.Collator('zh-CN-u-co-pinyin').compare);
-        return categories;
-    } catch (error) {
-        console.error('获取分类出错:', error);
-        app.ui.showMessage('promptMessage', UI.MESSAGES.CATEGORY_LOAD_ERROR, 'error');
-        return [];
-    }
-}
 
 async function fetchTerms(category) {
     if (state.termsCache[category]) {
@@ -49,35 +31,6 @@ async function fetchTerms(category) {
         app.ui.showMessage('promptMessage', UI.MESSAGES.TERMS_LOAD_ERROR, 'error');
         return [];
     }
-}
-
-// 初始化分类选择器
-async function initCategorySelect() {
-    const select = document.getElementById('categorySelect');
-    select.disabled = true;
-    
-    const categories = await fetchCategories();
-    if (categories.length > 0) {
-        const fragment = document.createDocumentFragment();
-        // 默认选项
-        const defaultOption = document.createElement('option');
-        defaultOption.value = "";
-        defaultOption.textContent = "——请选择——";
-        fragment.appendChild(defaultOption);
-        
-        categories.forEach(category => {
-             const option = document.createElement('option');
-             option.value = category;
-             option.textContent = category;
-             fragment.appendChild(option);
-        });
-        select.innerHTML = '';
-        select.appendChild(fragment);
-    } else {
-        app.ui.showMessage('promptMessage', '暂无可用分类', 'info');
-    }
-    
-    select.disabled = false;
 }
 
 // 搜索过滤处理 (使用公共防抖函数)
@@ -143,7 +96,20 @@ function updateOutputText() {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-    initCategorySelect();
+    
+    // [修改] 增加一个 async init 函数来处理分类加载
+    async function initPage() {
+        try {
+            // 调用公共函数并等待其完成
+            await app.ui.populateCategorySelect('categorySelect', '——请选择——');
+        } catch (error) {
+            // 捕获 common.js 抛出的错误，并显示在 UI 上
+            app.ui.showMessage('promptMessage', UI.MESSAGES.CATEGORY_LOAD_ERROR, 'error');
+            console.error(error); // 同时在控制台记录详细错误
+        }
+    }
+
+    initPage(); // 调用 init
 
     const categorySelect = document.getElementById('categorySelect');
     const termList = document.getElementById('termList');
