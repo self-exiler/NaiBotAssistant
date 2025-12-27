@@ -22,15 +22,23 @@ AI：使用Github Copilot/TRAE交替审查编写
 
 # 运行方式
 
-调试：直接
+## 调试：直接
 
 ```bash
 python app.py
 ```
 
-服务器部署
+## 服务器部署
 
 ```bash
 sudo pip install waitress
 nohup python waitress.py &
+```
+
+## （推荐）一键部署脚本
+
+```bash
+curl -o manage.sh https://raw.githubusercontent.com/self-exiler/NaiBotAssistant/main/manage.sh
+chmod +x manage.sh
+./manage.sh
 ```
