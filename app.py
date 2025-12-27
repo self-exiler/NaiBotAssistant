@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, make_response
 import orjson
 import os
 import logging
@@ -8,17 +8,22 @@ from functools import wraps
 import traceback
 import threading
 import io
-from pypinyin import lazy_pinyin # 导入 pypinyin
+from pypinyin import lazy_pinyin  # 导入 pypinyin
+from typing import Dict, List, Any, Optional, Callable
+from config import get_config
+
+# 加载配置
+app_config = get_config()
 
 # 基础配置
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_FILE = os.path.join(BASE_DIR, 'data.json')
-SYSTEM_FILE = os.path.join(BASE_DIR, 'system.json')
-LOG_DIR = os.path.join(BASE_DIR, 'logs')
+BASE_DIR = app_config.BASE_DIR
+DATA_FILE = app_config.get_absolute_path(app_config.DATA_FILE)
+SYSTEM_FILE = app_config.get_absolute_path(app_config.SYSTEM_FILE)
+LOG_DIR = app_config.get_absolute_path(app_config.LOG_DIR)
 
 # --- 性能优化：内存缓存与线程锁 ---
-_data_cache = {}
-_data_lock = threading.Lock()
+_data_cache: Dict[str, List[Dict[str, str]]] = {}
+_data_lock: threading.Lock = threading.Lock()
 # ------------------------------------
 
 # 确保日志目录存在
@@ -26,7 +31,12 @@ if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
 
 # 读取系统配置
-def load_system_config():
+def load_system_config() -> Dict[str, Any]:
+    """从system.json读取系统配置
+    
+    Returns:
+        配置字典，失败时返回默认配置
+    """
     try:
         with open(SYSTEM_FILE, 'rb') as f:
             return orjson.loads(f.read())
@@ -35,10 +45,12 @@ def load_system_config():
 
 # 配置日志记录
 app = Flask(__name__)
+app.config.from_object(app_config)
+
 handler = RotatingFileHandler(
     os.path.join(LOG_DIR, 'app.log'),
-    maxBytes=1024 * 1024,  # 1MB
-    backupCount=5
+    maxBytes=app_config.LOG_MAX_BYTES,
+    backupCount=app_config.MAX_BACKUP_COUNT
 )
 handler.setFormatter(logging.Formatter(
     '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
@@ -85,23 +97,30 @@ def handle_errors(f):
     return decorated_function
 
 # -------------------- 工具函数 (已优化) --------------------
-def get_port_from_config():
-    """从 system.json 读取端口配置，供开发和生产环境共同调用"""
-    port = 5000  # 默认端口
+def get_port_from_config() -> int:
+    """从 system.json 读取端口配置，供开发和生产环境共同调用
+    
+    Returns:
+        端口号，默认5000
+    """
+    port = app_config.PORT  # 从配置类获取默认端口
     sys_config_path = os.path.join(BASE_DIR, 'system.json')
     if os.path.exists(sys_config_path):
         try:
             with open(sys_config_path, 'rb') as f:
                 sys_config = orjson.loads(f.read())
-            port = sys_config.get('port', 5000)
+            port = sys_config.get('port', app_config.PORT)
         except Exception as e:
-            warning_msg = f"警告: 无法读取 system.json, 将使用默认端口 5000。错误: {e}"
+            warning_msg = f"警告: 无法读取 system.json, 将使用默认端口 {app_config.PORT}。错误: {e}"
             app.logger.warning(warning_msg)
-            print(warning_msg) # 在logger可能未完全配置的启动阶段，也打印出来
+            print(warning_msg)  # 在logger可能未完全配置的启动阶段，也打印出来
     return port
 
-def initialize_data():
-    """应用启动时，将数据加载到内存缓存中"""
+def initialize_data() -> None:
+    """应用启动时，将数据加载到内存缓存中
+    
+    加载失败时会创建备份并初始化为空数据
+    """
     global _data_cache
     try:
         if not os.path.exists(DATA_FILE):
@@ -125,7 +144,7 @@ def initialize_data():
 
     except orjson.JSONDecodeError as e:
         app.logger.error(f'JSON decode error in {DATA_FILE}: {str(e)}. Attempting to handle.')
-        backup_file = f'{DATA_FILE}.{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}.bak' # <-- 修复：增加微秒
+        backup_file = f'{DATA_FILE}.{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}.bak'
         try:
             os.rename(DATA_FILE, backup_file)
             app.logger.info(f'Created backup of corrupted file: {backup_file}')
@@ -136,18 +155,32 @@ def initialize_data():
         app.logger.error(f'Error loading data during initialization: {str(e)}')
         _data_cache = {}
 
-def load_data():
-    """直接从内存缓存返回数据的深拷贝，避免直接修改缓存"""
+def load_data() -> Dict[str, List[Dict[str, str]]]:
+    """直接从内存缓存返回数据的深拷贝，避免直接修改缓存
+    
+    Returns:
+        数据字典的深拷贝
+    """
     with _data_lock:
         return orjson.loads(orjson.dumps(_data_cache))
 
-def save_data(data):
-    """[已修改] 更新内存缓存并写入文件，确保分类键按拼音排序。"""
+def save_data(data: Dict[str, List[Dict[str, str]]]) -> bool:
+    """更新内存缓存并写入文件，确保分类键按拼音排序
+    
+    Args:
+        data: 要保存的数据字典
+        
+    Returns:
+        保存成功返回True
+        
+    Raises:
+        Exception: 保存失败时抛出异常
+    """
     global _data_cache
     try:
         with _data_lock:
             
-            # --- 新增：按分类名称拼音排序 ---
+            # --- 按分类名称拼音排序 ---
             try:
                 # 1. 按 pinyin 排序分类键
                 sorted_categories = sorted(data.keys(), key=lambda k: lazy_pinyin(k))
@@ -155,18 +188,17 @@ def save_data(data):
                 sorted_data = {category: data[category] for category in sorted_categories}
             except Exception as sort_e:
                 app.logger.error(f"Failed to sort categories by pinyin: {sort_e}. Saving in default order.")
-                sorted_data = data # 回退到未排序状态
+                sorted_data = data  # 回退到未排序状态
             # --- 结束 ---
 
-            _data_cache = sorted_data # [修改] 保存排序后的数据到缓存
+            _data_cache = sorted_data  # 保存排序后的数据到缓存
             
-            backup_path = os.path.join(BASE_DIR, 'backups')
+            backup_path = app_config.get_absolute_path(app_config.BACKUP_DIR)
             if not os.path.exists(backup_path):
                 os.makedirs(backup_path)
 
             # Create a backup before saving new data
             if os.path.exists(DATA_FILE):
-                # [已修复] 增加 %f (微秒) 来确保备份文件名唯一
                 backup_file = os.path.join(backup_path, f'data_{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}.json.bak')
                 try:
                     os.rename(DATA_FILE, backup_file)
@@ -177,16 +209,45 @@ def save_data(data):
 
             
             with open(DATA_FILE, 'wb') as f:
-                # [修改] 写入排序后的数据
+                # 写入排序后的数据
                 f.write(orjson.dumps(sorted_data, option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS)) 
             
             app.logger.info('Data cache updated, sorted by category, and saved to file.')
         return True
     except Exception as e:
         app.logger.error(f'Error saving data: {str(e)}')
-        raise # 重新引发异常，以便 handle_errors 能捕获它
+        raise  # 重新引发异常，以便 handle_errors 能捕获它
 
-# -------------------- 路由 --------------------
+# -------------------- HTTP缓存优化 --------------------
+@app.after_request
+def add_cache_headers(response):
+    """为响应添加适当的缓存头
+    
+    - 静态资源: 缓存1天
+    - API分类列表: 缓存5分钟
+    - 其他API: 不缓存
+    """
+    # 为静态资源添加缓存
+    if request.path.startswith('/static/'):
+        response.cache_control.max_age = app_config.CACHE_STATIC_SECONDS
+        response.cache_control.public = True
+    
+    # 为API添加缓存策略（具体在blueprint中处理）
+    elif request.path == '/api/categories':
+        response.cache_control.max_age = app_config.CACHE_CATEGORIES_SECONDS
+        response.cache_control.public = True
+    elif request.path.startswith('/api/'):
+        response.cache_control.no_cache = True
+        response.cache_control.no_store = True
+        response.cache_control.must_revalidate = True
+    
+    return response
+
+# -------------------- 注册API蓝图 --------------------
+from api import api_bp
+app.register_blueprint(api_bp)
+
+# -------------------- 页面路由 --------------------
 @app.route('/')
 @handle_errors
 def index():
@@ -207,36 +268,7 @@ def entry_input():
 def prompt_output():
     return render_template('promptOutput.html')
 
-# -------------- entryInput.html 相关 --------------
-@app.route('/api/add_entry', methods=['POST'])
-@handle_errors
-def add_entry():
-    category = request.form.get('category', '').strip()
-    term = request.form.get('term', '').strip()
-    trans = request.form.get('trans', '').strip()
-    note = request.form.get('note', '').strip()
-
-    if not all([category, term, trans]):
-        return jsonify({'status': 'error', 'msg': '分类、词条和译文不能为空'})
-    
-    if any(len(s) > max_len for s, max_len in [(category, 20), (term, 50), (trans, 100), (note, 200)]):
-        return jsonify({'status': 'error', 'msg': '输入内容超过长度限制'})
-
-    data = load_data()
-    
-    if category not in data:
-        data[category] = []
-
-    entry = next((item for item in data[category] if item['term'] == term), None)
-    if entry:
-        entry.update({'trans': trans, 'note': note})
-    else:
-        data[category].append({'term': term, 'trans': trans, 'note': note})
-
-    save_data(data) # [说明] 调用 save_data 时，分类会自动排序
-    return jsonify({'status': 'ok'})
-
-# 数据备份
+# -------------------- 数据备份路由 --------------------
 @app.route('/backup')
 @handle_errors
 def backup_data():
@@ -245,137 +277,9 @@ def backup_data():
     return send_file(
         io.BytesIO(data_to_backup),
         as_attachment=True,
-        download_name=f'data_backup_{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}.json', # <-- 修复：增加微秒
+        download_name=f'data_backup_{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}.json',
         mimetype='application/json'
     )
-
-# -------------- promptOutput.html 相关 --------------
-@app.route('/api/categories')
-@handle_errors
-def api_categories():
-    data = load_data()
-    return jsonify(list(data.keys())) # [说明] data.keys() 已经由 save_data 保证了顺序
-
-@app.route('/api/terms/<category>')
-@handle_errors
-def api_terms(category):
-    data = load_data()
-    return jsonify(data.get(category, []))
-
-# ========== 数据编辑器相关API (已合并和优化) ==========
-@app.route('/api/data', methods=['GET'])
-@handle_errors
-def api_get_data():
-    """获取扁平化的词条列表供批量编辑器使用"""
-    data = load_data()
-    category_filter = request.args.get('category') 
-
-    # [精简] 优化逻辑：只有当分类存在时才准备数据，否则返回空
-    data_to_flatten = {}
-    if category_filter and category_filter in data:
-        data_to_flatten = {category_filter: data[category_filter]}
-
-    arr = [{'category': cat, **item} for cat, items in data_to_flatten.items() for item in items]
-    return jsonify(arr)
-
-@app.route('/api/data', methods=['POST'])
-@handle_errors
-def api_save_data():
-
-    
-    payload = request.get_json(force=True)
-    
-    # 1. 解包
-    partial_data = payload.get('editorData') # 这是编辑器里的数据
-    loaded_category = payload.get('loadedCategory') # 这是用户加载的分类
-
-    if not isinstance(partial_data, dict) or not loaded_category:
-        return jsonify({'status': 'error', 'msg': '无效的数据格式 (缺少 editorData 或 loadedCategory)'}), 400
-
-    try:
-        full_data = load_data()
-        
-        # 2. 提取编辑器中的所有词条 (terms)，用于后续的去重
-        terms_in_editor = set()
-        for items in partial_data.values():
-            if isinstance(items, list):
-                for item in items:
-                    if item.get('term') and item.get('term').strip():
-                        terms_in_editor.add(item['term'].strip())
-        
-        # 3. 清理数据库 (full_data)
-        # 遍历数据库中的 *所有* 分类
-        for category in list(full_data.keys()):
-            
-            # 规则 A：如果这个分类是用户加载的分类 (loadedCategory)
-            # 我们无条件地清空它在数据库中的版本，
-            # 因为编辑器里的数据 (partial_data) 即将成为它的新内容。
-            if category == loaded_category:
-                full_data[category] = [] # 清空
-                continue # 继续处理下一个分类
-
-            # 规则 B：如果这个分类 *不是* 加载的分类 (例如 "分类B")
-            # 我们需要清理掉那些“即将被移动过来”的词条的旧版本（以防万一）
-            # (虽然在这个UI下，这步主要用于清理被移走的词条)
-            original_items = full_data.get(category, [])
-            filtered_items = [
-                item for item in original_items 
-                if item.get('term') not in terms_in_editor
-            ]
-            
-            if not filtered_items:
-                if category in full_data: del full_data[category]
-            else:
-                full_data[category] = filtered_items
-
-        # 4. 合并编辑器数据 (partial_data) 回 数据库 (full_data)
-        for category, items in partial_data.items():
-            
-            # 提取编辑器中这个分类的有效词条
-            new_items_from_editor = [
-                item for item in items 
-                if item.get('term') and item.get('term').strip()
-            ]
-
-            if not new_items_from_editor:
-                # 如果编辑器里这个分类是空的（例如 "分类A" 被删光了）
-                # 在步骤3中它已经被清空了 (full_data[category] = [])，这里不用操作
-                continue
-
-            # 获取数据库中该分类的“幸存”词条
-            # - 如果是 "分类A" (loaded_category)，existing_items 为 [] (已在步骤3中清空)
-            # - 如果是 "分类B" (移动目标)，existing_items 为 [B1, B2, B3...] (已在步骤3中清理)
-            existing_items = full_data.get(category, [])
-            
-            # 合并！
-            combined_items = existing_items + new_items_from_editor
-            
-            # 排序并存回 full_data
-            try:
-                sorted_items = sorted(
-                    combined_items, 
-                    key=lambda item: lazy_pinyin(item.get('term', ''))
-                )
-                full_data[category] = sorted_items
-                app.logger.info(f"Category '{category}' merged and sorted.")
-            except Exception as sort_e:
-                app.logger.error(f"Failed to sort items for category '{category}': {sort_e}")
-                full_data[category] = combined_items # 回退
-
-        # 5. 对于在 partial_data 中根本没出现、但在步骤3中被清空的 loaded_category
-        # (例如，用户加载"A"，然后删掉了所有行，又添加了一个"B"行)
-        # 我们需要确保"A"被正确删除
-        if loaded_category not in partial_data and loaded_category in full_data:
-             if not full_data[loaded_category]: # 确认它在步骤3中被清空
-                del full_data[loaded_category]
-                app.logger.info(f"Loaded category '{loaded_category}' removed as it's no longer in editor.")
-
-
-        save_data(full_data) # [说明] save_data 会自动对*分类*进行排序
-        return jsonify({'status': 'ok', 'msg': '数据合并并自动排序成功'})
-    except Exception as e:
-        app.logger.error(f'Error merging data: {str(e)}')
-        return jsonify({'status': 'error', 'msg': '保存数据时发生内部错误'}), 500
 
 if __name__ == '__main__':
     initialize_data()
