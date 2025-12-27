@@ -40,5 +40,5 @@ nohup python waitress.py &
 ```bash
 curl -o manage.sh https://raw.githubusercontent.com/self-exiler/NaiBotAssistant/main/manage.sh
 chmod +x manage.sh
-./manage.sh
+sudo ./manage.sh
 ```
