@@ -97,7 +97,7 @@ function uninstall() {
     echo "Uninstallation complete."
 }
 
-# 增加设置端口和日志等级的功能
+# 设置端口和日志等级的功能
 function configure() {
     echo "当前配置:"
     echo "端口: $(jq -r '.port' system.json)"
@@ -117,20 +117,21 @@ function configure() {
     fi
 }
 
-# 增加上载备份数据文件的功能
+# 修改上载备份数据文件的功能以支持 sudo 情况下的用户主目录
 function upload_backup() {
-    echo "正在上载 data.json 到程序目录..."
-    if [ -f "data.json" ]; then
-        cp data.json $PROJECT_DIR/data.json || { echo "备份失败。"; exit 1; }
-        echo "备份成功。"
+    USER_HOME=$(eval echo ~$(logname))  # 获取当前登录用户的主目录
+    echo "正在上载 $USER_HOME/data.json 到程序目录..."
+    if [ -f "$USER_HOME/data.json" ]; then
+        cp "$USER_HOME/data.json" "$PROJECT_DIR/data.json" || { echo "备份失败。"; exit 1; }
+        echo "上载成功。"
     else
-        echo "当前目录下未找到 data.json 文件。"
+        echo "用户主目录下未找到 data.json 文件。"
     fi
 }
 
 # 替换主逻辑为交互式菜单
 while true; do
-    echo "\n请选择一个操作:"
+    echo "请选择一个操作:"
     echo "1) 安装"
     echo "2) 更新"
     echo "3) 启动"

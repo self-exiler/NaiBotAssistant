@@ -3,7 +3,7 @@
 提供开发、生产等不同环境的配置
 """
 import os
-from typing import Optional
+from typing import Optional, Type
 
 
 class Config:
@@ -81,7 +81,7 @@ config = {
 }
 
 
-def get_config(env: Optional[str] = None) -> type[Config]:
+def get_config(env: Optional[str] = None) -> Type[Config]:
     """
     获取配置类
     
