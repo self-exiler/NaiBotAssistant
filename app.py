@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, make_response
+from flask import Flask, render_template, request, jsonify, send_file
 import orjson
 import os
 import logging
@@ -8,8 +8,8 @@ from functools import wraps
 import traceback
 import threading
 import io
-from pypinyin import lazy_pinyin  # 导入 pypinyin
-from typing import Dict, List, Any, Optional, Callable
+from pypinyin import lazy_pinyin
+from typing import Dict, Any
 from config import get_config
 
 # 加载配置
@@ -21,56 +21,28 @@ DATA_FILE = app_config.get_absolute_path(app_config.DATA_FILE)
 SYSTEM_FILE = app_config.get_absolute_path(app_config.SYSTEM_FILE)
 LOG_DIR = app_config.get_absolute_path(app_config.LOG_DIR)
 
-# --- 性能优化：内存缓存与线程锁 ---
-_data_cache: Dict[str, List[Dict[str, str]]] = {}
-_data_lock: threading.Lock = threading.Lock()
-# ------------------------------------
+# 性能优化：内存缓存与线程锁
+_data_cache = {}
+_data_lock = threading.Lock()
 
 # 确保日志目录存在
-if not os.path.exists(LOG_DIR):
-    os.makedirs(LOG_DIR)
+os.makedirs(LOG_DIR, exist_ok=True)
 
-# 读取系统配置
-def load_system_config() -> Dict[str, Any]:
-    """从system.json读取系统配置
-    
-    Returns:
-        配置字典，失败时返回默认配置
-    """
-    try:
-        with open(SYSTEM_FILE, 'rb') as f:
-            return orjson.loads(f.read())
-    except Exception:
-        return {"log_level": "warn"}  # 默认配置
-
-# 配置日志记录
+# 创建Flask应用并配置
 app = Flask(__name__)
 app.config.from_object(app_config)
 
+# 配置日志
 handler = RotatingFileHandler(
     os.path.join(LOG_DIR, 'app.log'),
     maxBytes=app_config.LOG_MAX_BYTES,
     backupCount=app_config.MAX_BACKUP_COUNT
 )
-handler.setFormatter(logging.Formatter(
-    '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
-))
+handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s'))
 app.logger.addHandler(handler)
+app.logger.setLevel(getattr(logging, app_config.LOG_LEVEL))
 
-# 设置日志等级
-system_config = load_system_config()
-log_level = system_config.get('log_level', 'warn').upper()
-log_level_map = {
-    'DEBUG': logging.DEBUG,
-    'INFO': logging.INFO,
-    'WARN': logging.WARNING,
-    'WARNING': logging.WARNING,
-    'ERROR': logging.ERROR,
-    'CRITICAL': logging.CRITICAL
-}
-app.logger.setLevel(log_level_map.get(log_level, logging.WARNING))
-
-# 配置Flask使用orjson作为JSON解析器
+# 配置Flask使用orjson
 from flask.json.provider import JSONProvider
 
 class ORJSONProvider(JSONProvider):
@@ -89,150 +61,96 @@ def handle_errors(f):
         try:
             return f(*args, **kwargs)
         except Exception as e:
-            app.logger.error(f'Error in {f.__name__}: {str(e)}')
-            app.logger.error(traceback.format_exc())
+            app.logger.error(f'{f.__name__} error: {e}\n{traceback.format_exc()}')
             if request.path.startswith('/api/'):
-                return jsonify({'status': 'error', 'msg': '操作失败，请稍后重试'}), 500
+                return jsonify({'status': 'error', 'msg': '操作失败'}), 500
             return render_template('error.html', error=str(e)), 500
     return decorated_function
 
-# -------------------- 工具函数 (已优化) --------------------
+# ==================== 数据管理函数 ====================
+
 def get_port_from_config() -> int:
-    """从 system.json 读取端口配置，供开发和生产环境共同调用
-    
-    Returns:
-        端口号，默认5000
-    """
-    port = app_config.PORT  # 从配置类获取默认端口
-    sys_config_path = os.path.join(BASE_DIR, 'system.json')
-    if os.path.exists(sys_config_path):
+    """从system.json读取端口或使用默认值"""
+    port = app_config.PORT
+    if os.path.exists(SYSTEM_FILE):
         try:
-            with open(sys_config_path, 'rb') as f:
-                sys_config = orjson.loads(f.read())
-            port = sys_config.get('port', app_config.PORT)
+            sys_config = orjson.loads(open(SYSTEM_FILE, 'rb').read())
+            port = sys_config.get('port', port)
         except Exception as e:
-            warning_msg = f"警告: 无法读取 system.json, 将使用默认端口 {app_config.PORT}。错误: {e}"
-            app.logger.warning(warning_msg)
-            print(warning_msg)  # 在logger可能未完全配置的启动阶段，也打印出来
+            app.logger.warning(f'Failed to read system.json: {e}')
     return port
 
 def initialize_data() -> None:
-    """应用启动时，将数据加载到内存缓存中
-    
-    加载失败时会创建备份并初始化为空数据
-    """
+    """应用启动时加载数据到内存缓存"""
     global _data_cache
     try:
         if not os.path.exists(DATA_FILE):
-            app.logger.warning(f'Data file not found: {DATA_FILE}, initializing empty data.')
+            app.logger.warning(f'Data file not found: {DATA_FILE}')
             _data_cache = {}
             return
-            
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+        
+        with open(DATA_FILE, 'rb') as f:
             content = f.read()
             if not content.strip():
                 _data_cache = {}
                 return
-
+            
             data = orjson.loads(content)
-            if not isinstance(data, dict):
-                app.logger.error(f'Invalid data format in {DATA_FILE}. Loading as empty.')
-                _data_cache = {}
-            else:
-                _data_cache = data
-                app.logger.info('Data loaded into memory cache successfully.')
-
-    except orjson.JSONDecodeError as e:
-        app.logger.error(f'JSON decode error in {DATA_FILE}: {str(e)}. Attempting to handle.')
-        backup_file = f'{DATA_FILE}.{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}.bak'
-        try:
-            os.rename(DATA_FILE, backup_file)
-            app.logger.info(f'Created backup of corrupted file: {backup_file}')
-        except Exception as backup_e:
-            app.logger.error(f'Failed to create backup: {str(backup_e)}')
-        _data_cache = {}
-    except Exception as e:
-        app.logger.error(f'Error loading data during initialization: {str(e)}')
-        _data_cache = {}
-
-def load_data() -> Dict[str, List[Dict[str, str]]]:
-    """直接从内存缓存返回数据的深拷贝，避免直接修改缓存
+            _data_cache = data if isinstance(data, dict) else {}
+            app.logger.info('Data loaded successfully')
     
-    Returns:
-        数据字典的深拷贝
-    """
+    except Exception as e:
+        app.logger.error(f'Error loading data: {e}')
+        _data_cache = {}
+
+def load_data() -> Dict[str, Any]:
+    """从缓存返回数据的深拷贝"""
     with _data_lock:
         return orjson.loads(orjson.dumps(_data_cache))
 
-def save_data(data: Dict[str, List[Dict[str, str]]]) -> bool:
-    """更新内存缓存并写入文件，确保分类键按拼音排序
-    
-    Args:
-        data: 要保存的数据字典
-        
-    Returns:
-        保存成功返回True
-        
-    Raises:
-        Exception: 保存失败时抛出异常
-    """
+def save_data(data: Dict[str, Any]) -> bool:
+    """保存数据到缓存和文件"""
     global _data_cache
     try:
         with _data_lock:
-            
-            # --- 按分类名称拼音排序 ---
+            # 按拼音排序分类
             try:
-                # 1. 按 pinyin 排序分类键
-                sorted_categories = sorted(data.keys(), key=lambda k: lazy_pinyin(k))
-                # 2. 创建一个新的字典，保持排序
-                sorted_data = {category: data[category] for category in sorted_categories}
-            except Exception as sort_e:
-                app.logger.error(f"Failed to sort categories by pinyin: {sort_e}. Saving in default order.")
-                sorted_data = data  # 回退到未排序状态
-            # --- 结束 ---
-
-            _data_cache = sorted_data  # 保存排序后的数据到缓存
+                sorted_data = {cat: data[cat] for cat in sorted(data.keys(), key=lazy_pinyin)}
+            except Exception:
+                sorted_data = data
             
-            backup_path = app_config.get_absolute_path(app_config.BACKUP_DIR)
-            if not os.path.exists(backup_path):
-                os.makedirs(backup_path)
-
-            # Create a backup before saving new data
+            _data_cache = sorted_data
+            
+            # 创建备份目录
+            backup_dir = app_config.get_absolute_path(app_config.BACKUP_DIR)
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            # 备份原文件
             if os.path.exists(DATA_FILE):
-                backup_file = os.path.join(backup_path, f'data_{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}.json.bak')
                 try:
-                    os.rename(DATA_FILE, backup_file)
-                    app.logger.info(f'Created backup: {backup_file}')
+                    backup = os.path.join(backup_dir, f'data_{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}.bak')
+                    os.rename(DATA_FILE, backup)
                 except Exception as e:
-                    # 捕获重命名失败，但允许继续写入（覆盖原文件）
-                    app.logger.error(f"Failed to create backup: {e}. Proceeding with save...")
-
+                    app.logger.warning(f'Backup failed: {e}')
             
+            # 保存文件
             with open(DATA_FILE, 'wb') as f:
-                # 写入排序后的数据
-                f.write(orjson.dumps(sorted_data, option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS)) 
+                f.write(orjson.dumps(sorted_data, option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS))
             
-            app.logger.info('Data cache updated, sorted by category, and saved to file.')
+            app.logger.info('Data saved')
         return True
     except Exception as e:
-        app.logger.error(f'Error saving data: {str(e)}')
-        raise  # 重新引发异常，以便 handle_errors 能捕获它
+        app.logger.error(f'Error saving data: {e}')
+        raise
 
-# -------------------- HTTP缓存优化 --------------------
+# ==================== HTTP缓存 ====================
+
 @app.after_request
 def add_cache_headers(response):
-    """为响应添加适当的缓存头
-    
-    - 静态资源: 缓存1天
-    - API分类列表: 缓存5分钟
-    - 其他API: 不缓存
-    """
-    # 为静态资源添加缓存
+    """为响应添加缓存头"""
     if request.path.startswith('/static/'):
         response.cache_control.max_age = app_config.CACHE_STATIC_SECONDS
         response.cache_control.public = True
-    
-    # 为API添加缓存策略（具体在blueprint中处理）
     elif request.path == '/api/categories':
         response.cache_control.max_age = app_config.CACHE_CATEGORIES_SECONDS
         response.cache_control.public = True
@@ -240,14 +158,16 @@ def add_cache_headers(response):
         response.cache_control.no_cache = True
         response.cache_control.no_store = True
         response.cache_control.must_revalidate = True
-    
     return response
 
-# -------------------- 注册API蓝图 --------------------
+# ==================== 注册蓝图和初始化 ====================
+
 from api import api_bp
 app.register_blueprint(api_bp)
+initialize_data()
 
-# -------------------- 页面路由 --------------------
+# ==================== 页面路由 ====================
+
 @app.route('/')
 @handle_errors
 def index():
@@ -268,11 +188,10 @@ def entry_input():
 def prompt_output():
     return render_template('promptOutput.html')
 
-# -------------------- 数据备份路由 --------------------
 @app.route('/backup')
 @handle_errors
 def backup_data():
-    """下载 data.json 文件作为备份"""
+    """下载 data.json 备份"""
     data_to_backup = orjson.dumps(_data_cache, option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS)
     return send_file(
         io.BytesIO(data_to_backup),
@@ -282,6 +201,5 @@ def backup_data():
     )
 
 if __name__ == '__main__':
-    initialize_data()
     port = get_port_from_config()
-    app.run(debug=True,port=port)
+    app.run(debug=app_config.DEBUG, port=port)

@@ -1,81 +1,76 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="NovelAI提示词组合助手 - 词条录入">
-    <title>词条录入 - NovelAI提示词组合助手</title>
+    <title>词条录入 - NovelAI 提示词助手</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
-    <!-- 先加载公共脚本，再加载页面专属脚本 -->
     <script src="{{ url_for('static', filename='js/common.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/entryInput.js') }}" defer></script>
 </head>
 <body>
-    <header class="container">
-        <h1>词条录入</h1>
-    </header>
+    <div class="container">
+        <header class="page-header">
+            <h1>词条录入</h1>
+            <a href="{{ url_for('index') }}" class="back-link">返回首页</a>
+        </header>
 
-    <main class="container">
-        <form id="entryForm" class="input-form" novalidate>
-            <div class="form-group">
-                <label for="category">分类：</label>
-                <input type="text" 
-                       id="category" 
-                       name="category" 
-                       required 
-                       placeholder="输入或选择一个已有的分类"
-                       aria-required="true"
-                       list="category-list"
-                       autocomplete="off">
-                <datalist id="category-list"></datalist>
-                <div class="form-help" id="categoryHelp"></div>
-            </div>
+        <main>
+            <form id="entryForm" class="entry-form" novalidate>
+                <div class="form-group">
+                    <label for="category">分类</label>
+                    <input type="text" 
+                           id="category" 
+                           name="category" 
+                           class="form-control"
+                           required 
+                           placeholder="输入或选择一个已有的分类"
+                           aria-required="true"
+                           list="category-list"
+                           autocomplete="off">
+                    <datalist id="category-list"></datalist>
+                </div>
 
-            <div class="form-group">
-                <label for="term">词条：</label>
-                <input type="text" 
-                       id="term" 
-                       name="term" 
-                       required 
-                       placeholder="请输入词条"
-                       aria-required="true">
-                <div class="form-help" id="termHelp"></div>
-            </div>
+                <div class="form-group">
+                    <label for="term">词条</label>
+                    <input type="text" 
+                           id="term" 
+                           name="term" 
+                           class="form-control"
+                           required 
+                           placeholder="请输入词条"
+                           aria-required="true">
+                </div>
 
-            <div class="form-group">
-                <label for="trans">译文：</label>
-                <input type="text" 
-                       id="trans" 
-                       name="trans" 
-                       required 
-                       placeholder="请输入译文"
-                       aria-required="true">
-                <div class="form-help" id="transHelp"></div>
-            </div>
+                <div class="form-group">
+                    <label for="trans">译文</label>
+                    <input type="text" 
+                           id="trans" 
+                           name="trans" 
+                           class="form-control"
+                           required 
+                           placeholder="请输入译文"
+                           aria-required="true">
+                </div>
 
-            <div class="form-group">
-                <label for="note">备注：</label>
-                <input type="text" 
-                       id="note" 
-                       name="note" 
-                       placeholder="可选">
-                <div class="form-help" id="noteHelp"></div>
-            </div>
+                <div class="form-group">
+                    <label for="note">备注 (可选)</label>
+                    <input type="text" 
+                           id="note" 
+                           name="note" 
+                           class="form-control"
+                           placeholder="可选">
+                </div>
 
-            <div class="form-actions">
-                <button type="submit" class="btn" aria-label="保存词条">保存</button>
-            </div>
+                <button type="submit" class="btn btn-primary" aria-label="保存词条">保存词条</button>
 
-            <div id="msg" role="alert" aria-live="polite"></div>
-        </form>
-    </main>
-
-    <footer class="container">
-        <a href="{{ url_for('index') }}" 
-           class="return-link" 
-           aria-label="返回到首页">
-            返回首页
-        </a>
-    </footer>
+                <div id="msg" class="message" role="alert" aria-live="polite"></div>
+            </form>
+        </main>
+    </div>
 </body>
 </html>
