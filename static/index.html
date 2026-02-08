@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NaiBotAssistant - 提示词管理工具</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzY2NkY3NCIvPgo8cGF0aCBkPSJNMTYgOEM5LjMwMzQ2IDggMyA5LjMwMzQ2IDMgMTNWNjlDMCA3NS42OTY2IDUuMzAzNDYgNzcgMTIgNzczVjE2QzEyIDcuMzAzNDYgMTYuOTAwOSA4IDI3IDhTMTYgOCAwLjg2NzEzIDhWMTMuU1oiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=">
+</head>
+
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzY2NkY3NCIvPgo8cGF0aCBkPSJNMTYgOEM5LjMwMzQ2IDggMyA5LjMwMzQ2IDMgMTNWNjlDMCA3NS42OTY2IDUuMzAzNDYgNzcgMTIgNzczVjE2QzEyIDcuMzAzNDYgMTYuOTAwOSA4IDI3IDhTMTYgOCAwLjg2NzEzIDhWMTMuU1oiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo="
+                    alt="Logo" class="nav-logo">
+                <span class="nav-title">NaiBotAssistant</span>
+            </div>
+            <div class="nav-menu" id="navMenu">
+                <a href="#home" class="nav-link active" data-page="home">首页</a>
+                <a href="#add" class="nav-link" data-page="add">词条录入</a>
+                <a href="#combine" class="nav-link" data-page="combine">词条组合</a>
+                <a href="#manage" class="nav-link" data-page="manage">批量管理</a>
+                <a href="#backup" class="nav-link" data-page="backup">备份管理</a>
+            </div>
+            <div class="nav-toggle" id="navToggle">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main class="main-content">
+        <!-- 首页 -->
+        <div id="homePage" class="page active">
+            <div class="container">
+                <div class="hero-section">
+                    <h1 class="hero-title">NaiBotAssistant</h1>
+                    <p class="hero-subtitle">专为 StableDiffusion（NovelAI 模型）用户打造的提示词管理工具</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="feature-card" data-page="add">
+                        <div class="feature-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z" fill="currentColor" />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">词条录入</h3>
+                        <p class="feature-description">快速录入新的提示词词条，支持分类管理和注释功能</p>
+                        <button class="feature-btn">开始录入</button>
+                    </div>
+
+                    <div class="feature-card" data-page="combine">
+                        <div class="feature-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">词条组合</h3>
+                        <p class="feature-description">选择多个词条，智能组合生成完美的提示词文本</p>
+                        <button class="feature-btn">开始组合</button>
+                    </div>
+
+                    <div class="feature-card" data-page="manage">
+                        <div class="feature-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 3V4H15V3M10 11H14V12H10V11M6 7H18V19H6V7Z" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">批量管理</h3>
+                        <p class="feature-description">高效管理所有词条，支持编辑、删除和批量操作</p>
+                        <button class="feature-btn">开始管理</button>
+                    </div>
+
+                    <div class="feature-card" data-page="backup">
+                        <div class="feature-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">备份管理</h3>
+                        <p class="feature-description">安全备份和恢复数据，支持CSV和SQLite格式</p>
+                        <button class="feature-btn">开始备份</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 词条录入页面 -->
+        <div id="addPage" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h2 class="page-title">词条录入</h2>
+                    <p class="page-description">添加新的提示词词条到数据库</p>
+                </div>
+
+                <div class="form-card">
+                    <form id="addForm" class="form">
+                        <div class="form-group">
+                            <label for="category" class="form-label">分类 <span class="required">*</span></label>
+                            <div class="input-group">
+                                <select id="category" name="category" class="form-select" required>
+                                    <option value="">请选择分类</option>
+                                    <option value="角色">角色</option>
+                                    <option value="场景">场景</option>
+                                    <option value="风格">风格</option>
+                                    <option value="质量">质量</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                                <input type="text" id="newCategory" name="newCategory" class="form-input"
+                                    placeholder="或输入新分类" style="display: none;">
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" id="useNewCategory" class="form-checkbox">
+                                <label for="useNewCategory" class="form-check-label">使用新分类</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="name" class="form-label">名称 <span class="required">*</span></label>
+                            <input type="text" id="name" name="name" class="form-input" placeholder="输入词条名称" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="translation" class="form-label">译文 <span class="required">*</span></label>
+                            <input type="text" id="translation" name="translation" class="form-input"
+                                placeholder="输入英文翻译，用英文逗号分隔" required>
+                            <small class="form-help">例如：cute girl, kawaii, adorable</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="comment" class="form-label">注释</label>
+                            <textarea id="comment" name="comment" class="form-textarea" placeholder="输入注释说明（可选）"
+                                rows="3"></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">录入词条</button>
+                            <button type="button" class="btn btn-secondary" onclick="showPage('home')">返回首页</button>
+                        </div>
+                    </form>
+
+                    <div id="formMessage" class="form-message"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 词条组合页面 -->
+        <div id="combinePage" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h2 class="page-title">词条组合</h2>
+                    <p class="page-description">选择词条组合生成完美提示词</p>
+                </div>
+
+                <div class="combine-layout">
+                    <div class="combine-sidebar">
+                        <div class="sidebar-section">
+                            <label class="form-label">选择分类</label>
+                            <select id="combineCategory" class="form-select">
+                                <option value="">所有分类</option>
+                            </select>
+                        </div>
+
+                        <div class="sidebar-section">
+                            <div class="form-check">
+                                <input type="checkbox" id="usePrefix" class="form-checkbox" checked>
+                                <label for="usePrefix" class="form-check-label">使用 Nai 命令前缀</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="combine-main">
+                        <div class="prompts-panel">
+                            <div class="panel-header">
+                                <h3>词条列表</h3>
+                                <span id="selectedCount" class="selected-count">已选择 0 个词条</span>
+                            </div>
+                            <div id="promptsList" class="prompts-list">
+                                <!-- 词条列表将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+
+                        <div class="preview-panel">
+                            <div class="panel-header">
+                                <h3>组合预览</h3>
+                                <button id="copyBtn" class="btn btn-sm btn-primary" disabled>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                        xmlns="http://www.w3.org/2000/svg">
+                                        <path
+                                            d="M16 4H18C18.5304 4 19.0391 4.21071 19.4142 4.58579C19.7893 4.96086 20 5.46957 20 6V18C20 18.5304 19.7893 19.0391 19.4142 19.4142C19.0391 19.7893 18.5304 20 18 20H6C5.46957 20 4.96086 19.7893 4.58579 19.4142C4.21071 19.0391 4 18.5304 4 18V6C4 5.46957 4.21071 4.96086 4.58579 4.58579C4.96086 4.21071 5.46957 4 6 4H8"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" />
+                                        <path d="M8 8H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" />
+                                        <path d="M8 12H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" />
+                                        <path d="M8 16H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" />
+                                    </svg>
+                                    复制文本
+                                </button>
+                            </div>
+                            <div id="previewText" class="preview-text">
+                                选择的词条译文将在这里显示
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="page-actions">
+                    <button type="button" class="btn btn-secondary" onclick="showPage('home')">返回首页</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 批量管理页面 -->
+        <div id="managePage" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h2 class="page-title">批量管理</h2>
+                    <p class="page-description">管理所有提示词词条</p>
+                </div>
+
+                <div class="manage-toolbar">
+                    <div class="toolbar-left">
+                        <div class="form-group inline">
+                            <label class="form-label">分类筛选</label>
+                            <select id="manageCategory" class="form-select">
+                                <option value="">所有分类</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="btn btn-primary" onclick="showPage('add')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z" fill="currentColor" />
+                            </svg>
+                            新增词条
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-card">
+                    <div class="table-header">
+                        <div class="table-actions">
+                            <label class="checkbox-all">
+                                <input type="checkbox" id="selectAll" class="form-checkbox">
+                                <span>全选</span>
+                            </label>
+                            <button id="deleteSelected" class="btn btn-sm btn-danger" disabled>删除选中</button>
+                        </div>
+                        <div class="table-pagination">
+                            <button id="prevPage" class="btn btn-sm" disabled>上一页</button>
+                            <span id="pageInfo" class="page-info">第 1 页，共 1 页</span>
+                            <button id="nextPage" class="btn btn-sm" disabled>下一页</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table" id="promptsTable">
+                            <thead>
+                                <tr>
+                                    <th>选择</th>
+                                    <th>分类</th>
+                                    <th>名称</th>
+                                    <th>译文</th>
+                                    <th>注释</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="promptsTableBody">
+                                <!-- 数据将通过JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="page-actions">
+                    <button type="button" class="btn btn-secondary" onclick="showPage('home')">返回首页</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 备份管理页面 -->
+        <div id="backupPage" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h2 class="page-title">备份管理</h2>
+                    <p class="page-description">备份和恢复您的提示词数据</p>
+                </div>
+
+                <div class="backup-sections">
+                    <div class="backup-section">
+                        <h3 class="section-title">导出备份</h3>
+                        <div class="backup-options">
+                            <div class="backup-option">
+                                <h4>CSV 格式</h4>
+                                <p>导出为 CSV 文件，便于在其他程序中打开</p>
+                                <button id="exportCsv" class="btn btn-primary">导出 CSV</button>
+                            </div>
+                            <div class="backup-option">
+                                <h4>SQLite 数据库</h4>
+                                <p>导出为 SQLite 数据库文件</p>
+                                <button id="exportDb" class="btn btn-primary">导出数据库</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="backup-section">
+                        <h3 class="section-title">恢复数据</h3>
+                        <div class="restore-options">
+                            <div class="restore-option">
+                                <h4>从 CSV 恢复</h4>
+                                <div class="form-group">
+                                    <label class="form-label">选择 CSV 文件</label>
+                                    <input type="file" id="csvFile" class="form-file" accept=".csv">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">恢复模式</label>
+                                    <div class="radio-group">
+                                        <label class="radio-label">
+                                            <input type="radio" name="csvMode" value="increment" checked>
+                                            <span>增量恢复（追加数据）</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="csvMode" value="replace">
+                                            <span>覆盖恢复（完全替换）</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <button id="restoreCsv" class="btn btn-warning">恢复 CSV</button>
+                            </div>
+
+                            <div class="restore-option">
+                                <h4>从数据库恢复</h4>
+                                <div class="form-group">
+                                    <label class="form-label">选择 SQLite 文件</label>
+                                    <input type="file" id="dbFile" class="form-file" accept=".db,.sqlite,.sqlite3">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">恢复模式</label>
+                                    <div class="radio-group">
+                                        <label class="radio-label">
+                                            <input type="radio" name="dbMode" value="increment" checked>
+                                            <span>增量恢复（追加数据）</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="dbMode" value="replace">
+                                            <span>覆盖恢复（完全替换）</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <button id="restoreDb" class="btn btn-warning">恢复数据库</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="page-actions">
+                    <button type="button" class="btn btn-secondary" onclick="showPage('home')">返回首页</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2025 NaiBotAssistant. 专为 AI 绘图用户打造。</p>
+                <a href="https://github.com/self-exiler/NaiBotAssistant" class="github-link" target="_blank">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                    </svg>
+                    GitHub
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 加载和消息提示 -->
+    <div id="loading" class="loading" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">处理中...</div>
+    </div>
+
+    <div id="message" class="message" style="display: none;">
+        <div class="message-content">
+            <span class="message-text"></span>
+            <button class="message-close">&times;</button>
+        </div>
+    </div>
+
+    <!-- 编辑词条对话框 -->
+    <div id="editPromptModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">编辑词条</h3>
+            </div>
+            <div class="modal-body">
+                <form id="editForm" class="form">
+                    <input type="hidden" id="editId" name="id">
+                    <div class="form-group">
+                        <label for="editCategory" class="form-label">分类 <span class="required">*</span></label>
+                        <div class="input-group">
+                            <select id="editCategory" name="category" class="form-select" required>
+                                <!-- 分类选项将动态生成 -->
+                            </select>
+                            <input type="text" id="editNewCategory" name="newCategory" class="form-input"
+                                placeholder="或输入新分类" style="display: none;">
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" id="useEditNewCategory" class="form-checkbox">
+                            <label for="useEditNewCategory" class="form-check-label">使用新分类</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editName" class="form-label">名称 <span class="required">*</span></label>
+                        <input type="text" id="editName" name="name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTranslation" class="form-label">译文 <span class="required">*</span></label>
+                        <input type="text" id="editTranslation" name="translation" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editComment" class="form-label">注释</label>
+                        <textarea id="editComment" name="comment" class="form-textarea" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="editCancel" class="btn btn-secondary">取消</button>
+                <button id="editSave" class="btn btn-primary">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div id="confirmModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">提示</h3>
+            </div>
+            <div class="modal-body">
+                <p class="modal-text"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmCancel" class="btn btn-secondary">取消</button>
+                <button id="confirmOk" class="btn btn-danger">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>

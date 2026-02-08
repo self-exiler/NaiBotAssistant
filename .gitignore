@@ -1,4 +1,5 @@
-backups/*
+database/*
 *.pyc
-logs/*
-data.json
+temp/*
+script/*.py 
+script/*.json

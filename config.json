@@ -1,0 +1,29 @@
+{
+    "app_name": "NaiBotAssistant",
+    "version": "1.0.0",
+    "server": {
+        "host": "localhost",
+        "port": 15252,
+        "debug": false
+    },
+    "database": {
+        "path": "./database/naibot.db"
+    },
+    "logging": {
+        "level": "INFO",
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    },
+    "upload": {
+        "max_file_size": 10485760,
+        "allowed_extensions": ["csv", "db", "sqlite", "sqlite3"]
+    },
+    "pagination": {
+        "default_page_size": 100,
+        "max_page_size": 100
+    },
+    "backup": {
+        "temp_dir": "./temp",
+        "retention_days": 30,
+        "auto_backup": true
+    }
+}
