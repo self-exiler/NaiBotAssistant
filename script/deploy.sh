@@ -278,6 +278,87 @@ create_service_only() {
     print_info "访问地址: http://localhost:$port"
 }
 
+# 停止服务
+stop_service() {
+    print_info "停止 ${APP_NAME} 服务..."
+    
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+        systemctl stop "$SERVICE_NAME"
+        print_success "服务已停止"
+    else
+        print_warning "服务未运行"
+    fi
+}
+
+# 卸载服务
+uninstall_service() {
+    print_warning "卸载服务将禁用并删除 systemd 服务文件"
+    echo -n "确认卸载服务？(y/n): "
+    read -r confirm
+    
+    if [ "$confirm" != "y" ]; then
+        print_info "已取消卸载"
+        return
+    fi
+    
+    print_info "卸载服务..."
+    
+    # 停止服务
+    systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+    
+    # 禁用服务
+    systemctl disable "$SERVICE_NAME" 2>/dev/null || true
+    
+    # 删除服务文件
+    if [ -f "/etc/systemd/system/${SERVICE_NAME}.service" ]; then
+        rm -f "/etc/systemd/system/${SERVICE_NAME}.service"
+        systemctl daemon-reload
+        print_success "服务已卸载"
+    else
+        print_warning "服务文件不存在"
+    fi
+}
+
+# 删除程序
+uninstall_app() {
+    print_error "此操作将停止服务、卸载服务并删除所有应用文件和数据"
+    echo -n "确认删除 ${APP_NAME}？此操作不可恢复！(y/n): "
+    read -r confirm_1
+    
+    if [ "$confirm_1" != "y" ]; then
+        print_info "已取消删除"
+        return
+    fi
+    
+    echo -n "请再次确认删除 (输入: yes): "
+    read -r confirm_2
+    
+    if [ "$confirm_2" != "yes" ]; then
+        print_info "已取消删除"
+        return
+    fi
+    
+    print_info "开始删除 ${APP_NAME}..."
+    
+    # 停止并卸载服务
+    print_info "停止并卸载服务..."
+    systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+    systemctl disable "$SERVICE_NAME" 2>/dev/null || true
+    rm -f "/etc/systemd/system/${SERVICE_NAME}.service"
+    systemctl daemon-reload 2>/dev/null || true
+    
+    # 删除应用目录
+    print_info "删除应用文件..."
+    if [ -d "$INSTALL_DIR" ]; then
+        rm -rf "$INSTALL_DIR"
+        print_success "应用文件已删除"
+    else
+        print_warning "应用目录不存在"
+    fi
+    
+    print_success "删除完成！${APP_NAME} 已完全卸载"
+}
+
 # 查看状态
 show_status() {
     print_info "${APP_NAME} 服务状态:"
@@ -298,9 +379,12 @@ show_menu() {
     echo "  4. 设置端口"
     echo "  5. 仅创建服务 (手动部署后使用)"
     echo "  6. 查看状态"
+    echo "  7. 停止服务"
+    echo "  8. 卸载服务"
+    echo "  9. 删除程序 (完全卸载)"
     echo "  0. 退出"
     echo ""
-    echo -n "请选择操作 [0-6]: "
+    echo -n "请选择操作 [0-9]: "
 }
 
 # 主函数
@@ -319,6 +403,9 @@ main() {
             4) set_port ;;
             5) create_service_only ;;
             6) show_status ;;
+            7) stop_service ;;
+            8) uninstall_service ;;
+            9) uninstall_app ;;
             0) 
                 print_info "退出"
                 exit 0
