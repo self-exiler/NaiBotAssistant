@@ -302,6 +302,9 @@ class NaiBotAssistant {
             case 'backup':
                 this.prepareBackupPage();
                 break;
+            case 'stats':
+                this.loadStatsPage();
+                break;
         }
 
         // 关闭移动端菜单
@@ -331,6 +334,54 @@ class NaiBotAssistant {
     // 准备备份管理页面
     prepareBackupPage() {
         // 备份管理页面主要使用静态功能，不需要特别准备
+    }
+
+    // 加载统计页面
+    async loadStatsPage() {
+        try {
+            this.showLoading();
+
+            // 获取分类统计信息
+            const statsResult = await this.apiCall('/api/v1/categories/stats');
+            const stats = statsResult.data;
+
+            // 更新统计卡片
+            document.getElementById('statTotalCategories').textContent = stats.total_categories;
+            document.getElementById('statTotalPrompts').textContent = stats.total_prompts;
+            document.getElementById('statRecentAdded').textContent = stats.recent_added;
+
+            // 获取分类详情
+            const categoriesResult = await this.apiCall('/api/v1/categories');
+            const categories = categoriesResult.data;
+
+            // 渲染分类详情表格
+            const tbody = document.getElementById('categoryStatsTableBody');
+            tbody.innerHTML = '';
+
+            categories.forEach((cat, index) => {
+                const row = document.createElement('tr');
+                const createdAt = cat.created_at ? new Date(cat.created_at).toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : '-';
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${cat.name}</td>
+                    <td>${cat.count}</td>
+                    <td>${createdAt}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+        } catch (error) {
+            console.error('加载统计数据失败:', error);
+            this.showMessage('加载统计数据失败：' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
     }
 
     // 更新分类选项

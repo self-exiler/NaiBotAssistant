@@ -25,6 +25,7 @@
                 <a href="#combine" class="nav-link" data-page="combine">词条组合</a>
                 <a href="#manage" class="nav-link" data-page="manage">批量管理</a>
                 <a href="#backup" class="nav-link" data-page="backup">备份管理</a>
+                <a href="#stats" class="nav-link" data-page="stats">数据统计</a>
             </div>
             <div class="nav-toggle" id="navToggle">
                 <span class="bar"></span>
@@ -97,6 +98,19 @@
                         <h3 class="feature-title">备份管理</h3>
                         <p class="feature-description">安全备份和恢复数据，支持CSV和SQLite格式</p>
                         <button class="feature-btn">开始备份</button>
+                    </div>
+
+                    <div class="feature-card" data-page="stats">
+                        <div class="feature-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18 20V10M12 20V4M6 20V14" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">数据统计</h3>
+                        <p class="feature-description">查看数据库统计信息，包括分类数量和词条总数</p>
+                        <button class="feature-btn">查看统计</button>
                     </div>
                 </div>
             </div>
@@ -375,6 +389,86 @@
                 </div>
 
                 <div class="page-actions">
+                    <button type="button" class="btn btn-secondary" onclick="showPage('home')">返回首页</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据统计页面 -->
+        <div id="statsPage" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h2 class="page-title">数据统计</h2>
+                    <p class="page-description">查看数据库词条和分类的统计信息</p>
+                </div>
+
+                <div class="stats-overview">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 6H20M4 12H20M4 18H12" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="statTotalCategories">-</div>
+                            <div class="stat-label">分类总数</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z" fill="currentColor" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="statTotalPrompts">-</div>
+                            <div class="stat-label">词条合计</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 8V12L15 15M12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="statRecentAdded">-</div>
+                            <div class="stat-label">近7天新增</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-detail">
+                    <h3 class="section-title">分类详情</h3>
+                    <div class="table-card">
+                        <div class="table-container">
+                            <table class="table" id="categoryStatsTable">
+                                <thead>
+                                    <tr>
+                                        <th>序号</th>
+                                        <th>分类名称</th>
+                                        <th>词条数量</th>
+                                        <th>创建时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoryStatsTableBody">
+                                    <!-- 数据将通过JavaScript动态生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="page-actions">
+                    <button type="button" class="btn btn-primary" onclick="window.naibotApp.loadStatsPage()">刷新数据</button>
                     <button type="button" class="btn btn-secondary" onclick="showPage('home')">返回首页</button>
                 </div>
             </div>
