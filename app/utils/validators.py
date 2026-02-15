@@ -15,7 +15,6 @@ def validate_prompt_data(data):
     """
     errors = {}
     
-    # 必填字段验证
     if not data.get('category'):
         errors['category'] = ['分类不能为空']
     
@@ -25,12 +24,14 @@ def validate_prompt_data(data):
     if not data.get('translation'):
         errors['translation'] = ['译文不能为空']
     
-    # 长度验证
     if data.get('category') and len(data['category']) > 50:
         errors.setdefault('category', []).append('分类长度不能超过50个字符')
     
     if data.get('name') and len(data['name']) > 100:
         errors.setdefault('name', []).append('名称长度不能超过100个字符')
+    
+    if data.get('translation') and len(data['translation']) > 5000:
+        errors.setdefault('translation', []).append('译文长度不能超过5000个字符')
     
     return len(errors) == 0, errors
 

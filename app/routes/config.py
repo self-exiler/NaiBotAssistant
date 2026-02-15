@@ -12,14 +12,13 @@ from datetime import datetime
 
 bp = Blueprint('config', __name__, url_prefix='/api/v1')
 
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config.json')
+
 
 @bp.route('/config', methods=['GET'])
 def get_config():
     """获取系统配置"""
-    # 读取config.json
-    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config.json')
-    
-    with open(config_path, 'r', encoding='utf-8') as f:
+    with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
         config_data = json.load(f)
     
     data = {
@@ -35,6 +34,11 @@ def get_config():
     return success_response(data, '获取成功')
 
 
+VALID_LOG_LEVELS = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
+VALID_PORT_RANGE = (1, 65535)
+VALID_PAGE_SIZE_RANGE = (10, 500)
+
+
 @bp.route('/config', methods=['PUT'])
 def update_config():
     """更新系统配置"""
@@ -43,13 +47,34 @@ def update_config():
     if not data:
         return error_response('请求数据不能为空', 400)
     
-    # 读取现有配置
-    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config.json')
+    errors = []
     
-    with open(config_path, 'r', encoding='utf-8') as f:
+    if 'log_level' in data:
+        if data['log_level'] not in VALID_LOG_LEVELS:
+            errors.append(f'日志级别必须是 {VALID_LOG_LEVELS} 之一')
+    
+    if 'server_port' in data:
+        try:
+            port = int(data['server_port'])
+            if not (VALID_PORT_RANGE[0] <= port <= VALID_PORT_RANGE[1]):
+                errors.append(f'端口号必须在 {VALID_PORT_RANGE[0]}-{VALID_PORT_RANGE[1]} 之间')
+        except (ValueError, TypeError):
+            errors.append('端口号必须是整数')
+    
+    if 'page_size' in data:
+        try:
+            page_size = int(data['page_size'])
+            if not (VALID_PAGE_SIZE_RANGE[0] <= page_size <= VALID_PAGE_SIZE_RANGE[1]):
+                errors.append(f'每页条数必须在 {VALID_PAGE_SIZE_RANGE[0]}-{VALID_PAGE_SIZE_RANGE[1]} 之间')
+        except (ValueError, TypeError):
+            errors.append('每页条数必须是整数')
+    
+    if errors:
+        return error_response('配置验证失败', 400, errors)
+    
+    with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
         config_data = json.load(f)
     
-    # 更新配置
     restart_required = False
     
     if 'log_level' in data:
@@ -62,8 +87,7 @@ def update_config():
     if 'page_size' in data:
         config_data['pagination']['default_page_size'] = int(data['page_size'])
     
-    # 保存配置
-    with open(config_path, 'w', encoding='utf-8') as f:
+    with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
         json.dump(config_data, f, indent=4, ensure_ascii=False)
     
     result = {

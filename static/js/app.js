@@ -105,6 +105,13 @@ class NaiBotAssistant {
             });
         }
 
+        const filterInput = document.getElementById('combineFilter');
+        if (filterInput) {
+            filterInput.addEventListener('input', () => {
+                this.filterCombinePrompts();
+            });
+        }
+
         const copyBtn = document.getElementById('copyBtn');
         if (copyBtn) {
             copyBtn.addEventListener('click', () => {
@@ -112,7 +119,6 @@ class NaiBotAssistant {
             });
         }
 
-        // 命令前缀复选框
         const usePrefix = document.getElementById('usePrefix');
         if (usePrefix) {
             usePrefix.addEventListener('change', () => {
@@ -322,6 +328,9 @@ class NaiBotAssistant {
     // 准备词条组合页面
     prepareCombinePage() {
         this.updateCategoryOptions();
+        const filterInput = document.getElementById('combineFilter');
+        if (filterInput) filterInput.value = '';
+        this.allCombinePrompts = [];
         this.loadCombinePrompts();
     }
 
@@ -472,41 +481,71 @@ class NaiBotAssistant {
         if (!promptsList) return;
 
         try {
-            // 从LAPI获取词条
-            const url = category ? `/api/v1/prompts?category=${encodeURIComponent(category)}&limit=1000` : '/api/v1/prompts?limit=1000';
+            const url = category 
+                ? `/api/v1/prompts?category=${encodeURIComponent(category)}&limit=200&sort=name_asc` 
+                : '/api/v1/prompts?limit=200&sort=name_asc';
             const result = await this.apiCall(url);
-            const prompts = result.data.prompts;
-
-            promptsList.innerHTML = '';
-
-            prompts.forEach(prompt => {
-                const item = document.createElement('div');
-                item.className = 'prompt-item';
-
-                const isSelected = this.selectedPrompts.has(prompt.id);
-                const commentHtml = prompt.comment ? `<div class="prompt-comment">${prompt.comment}</div>` : '';
-                item.innerHTML = `
-                    <input type="checkbox" class="prompt-checkbox" ${isSelected ? 'checked' : ''} data-id="${prompt.id}">
-                    <div class="prompt-info">
-                        <div class="prompt-name">${prompt.name}</div>
-                        ${commentHtml}
-                    </div>
-                `;
-
-                const checkbox = item.querySelector('.prompt-checkbox');
-                checkbox.addEventListener('change', (e) => {
-                    this.handlePromptSelection(prompt, e.target.checked);
-                });
-
-                promptsList.appendChild(item);
-            });
-
-            this.updateSelectedCount();
-            this.updatePreviewText();
+            this.allCombinePrompts = result.data.prompts || [];
+            
+            this.renderCombinePrompts(this.allCombinePrompts);
         } catch (error) {
             console.error('加载词条失败:', error);
             promptsList.innerHTML = '<p style="text-align:center;color:#999;">加载失败，请重试</p>';
         }
+    }
+
+    filterCombinePrompts() {
+        const filterText = document.getElementById('combineFilter')?.value?.toLowerCase().trim() || '';
+        
+        if (!filterText) {
+            this.renderCombinePrompts(this.allCombinePrompts || []);
+            return;
+        }
+        
+        const filtered = (this.allCombinePrompts || []).filter(prompt => 
+            prompt.name.toLowerCase().includes(filterText) ||
+            prompt.translation.toLowerCase().includes(filterText) ||
+            (prompt.comment && prompt.comment.toLowerCase().includes(filterText))
+        );
+        
+        this.renderCombinePrompts(filtered);
+    }
+
+    renderCombinePrompts(prompts) {
+        const promptsList = document.getElementById('promptsList');
+        if (!promptsList) return;
+
+        promptsList.innerHTML = '';
+
+        if (prompts.length === 0) {
+            promptsList.innerHTML = '<p style="text-align:center;color:#999;">暂无匹配的词条</p>';
+            return;
+        }
+
+        prompts.forEach(prompt => {
+            const item = document.createElement('div');
+            item.className = 'prompt-item';
+
+            const isSelected = this.selectedPrompts.has(prompt.id);
+            const commentHtml = prompt.comment ? `<div class="prompt-comment">${prompt.comment}</div>` : '';
+            item.innerHTML = `
+                <input type="checkbox" class="prompt-checkbox" ${isSelected ? 'checked' : ''} data-id="${prompt.id}">
+                <div class="prompt-info">
+                    <div class="prompt-name">${prompt.name}</div>
+                    ${commentHtml}
+                </div>
+            `;
+
+            const checkbox = item.querySelector('.prompt-checkbox');
+            checkbox.addEventListener('change', (e) => {
+                this.handlePromptSelection(prompt, e.target.checked);
+            });
+
+            promptsList.appendChild(item);
+        });
+
+        this.updateSelectedCount();
+        this.updatePreviewText();
     }
 
     // 处理词条选择

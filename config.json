@@ -24,6 +24,7 @@
     "backup": {
         "temp_dir": "./temp",
         "retention_days": 30,
-        "auto_backup": true
+        "auto_backup": true,
+        "history_limit": 50
     }
 }

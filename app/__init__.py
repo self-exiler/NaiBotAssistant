@@ -43,12 +43,11 @@ def create_app(config_name='default'):
     })
     
     # 注册蓝图
-    from app.routes import health, categories, prompts, combine, backup, config as config_routes
+    from app.routes import health, categories, prompts, backup, config as config_routes
     
     app.register_blueprint(health.bp)
     app.register_blueprint(categories.bp)
     app.register_blueprint(prompts.bp)
-    app.register_blueprint(combine.bp)
     app.register_blueprint(backup.bp)
     app.register_blueprint(config_routes.bp)
     

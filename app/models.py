@@ -7,17 +7,21 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
+def _utcnow():
+    return datetime.now(timezone.utc)
+
+
 class Prompt(db.Model):
     """词条模型"""
     __tablename__ = 'prompts'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     category = db.Column(db.String(50), nullable=False, index=True)
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), nullable=False, index=True)
     translation = db.Column(db.Text, nullable=False)
     comment = db.Column(db.Text, default='')
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = db.Column(db.DateTime, default=_utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=_utcnow, onupdate=_utcnow, nullable=False)
     
     def to_dict(self):
         """转换为字典"""
@@ -43,7 +47,7 @@ class BackupHistory(db.Model):
     operation = db.Column(db.String(50), nullable=False)  # csv_increment, csv_replace, db_increment, db_replace
     filename = db.Column(db.String(255), nullable=False)
     imported_count = db.Column(db.Integer, default=0)
-    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    timestamp = db.Column(db.DateTime, default=_utcnow, nullable=False)
     
     def to_dict(self):
         """转换为字典"""
