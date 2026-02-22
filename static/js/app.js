@@ -112,6 +112,13 @@ class NaiBotAssistant {
             });
         }
 
+        const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+        if (clearSelectionBtn) {
+            clearSelectionBtn.addEventListener('click', () => {
+                this.clearSelectedPrompts();
+            });
+        }
+
         const copyBtn = document.getElementById('copyBtn');
         if (copyBtn) {
             copyBtn.addEventListener('click', () => {
@@ -596,6 +603,24 @@ class NaiBotAssistant {
         if (copyBtn) {
             copyBtn.disabled = !translations.length;
         }
+        
+        const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+        if (clearSelectionBtn) {
+            clearSelectionBtn.disabled = !translations.length;
+        }
+    }
+
+    clearSelectedPrompts() {
+        this.selectedPrompts.clear();
+        this.selectedPromptsData = {};
+        
+        document.querySelectorAll('#promptsList .prompt-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        this.updateSelectedCount();
+        this.updatePreviewText();
+        this.showMessage('已清空所有选择', 'success');
     }
 
     // 复制到剪贴板

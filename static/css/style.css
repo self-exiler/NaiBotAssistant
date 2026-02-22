@@ -475,6 +475,12 @@ body {
     border-radius: 20px;
 }
 
+.panel-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 .prompts-list {
     max-height: 400px;
     overflow-y: auto;
