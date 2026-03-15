@@ -48,6 +48,13 @@ class NaiBotAssistant {
             });
         }
 
+        // 监听窗口大小变化，更新移动端显示
+        window.addEventListener('resize', () => {
+            if (this.currentPage === 'combine') {
+                this.updateSelectedCount();
+            }
+        });
+
         // 词条录入表单
         this.bindAddFormEvents();
 
@@ -574,7 +581,9 @@ class NaiBotAssistant {
         const selectedCount = document.getElementById('selectedCount');
         if (selectedCount) {
             const count = this.selectedPrompts.size;
-            selectedCount.textContent = `已选择 ${count} 个词条`;
+            // 移动端显示简化文本
+            const isMobile = window.innerWidth <= 768;
+            selectedCount.textContent = isMobile ? `${count}个` : `已选择 ${count} 个词条`;
         }
     }
 
@@ -1148,11 +1157,5 @@ document.addEventListener('keydown', (e) => {
             window.naibotApp.hideConfirm();
             window.naibotApp.hideMessage();
         }
-    }
-
-    // Ctrl+C 在组合页面复制
-    if (e.ctrlKey && e.key === 'c' && window.naibotApp?.currentPage === 'combine') {
-        e.preventDefault();
-        window.naibotApp.copyToClipboard();
     }
 });

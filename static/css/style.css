@@ -66,6 +66,12 @@ body {
     font-weight: 700;
 }
 
+.nav-title-short {
+    display: none;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
 .nav-menu {
     display: flex;
     gap: 2rem;
@@ -487,6 +493,99 @@ body {
     padding: 1rem;
 }
 
+/* 移动端词条组合页面优化 */
+@media (max-width: 768px) {
+    .combine-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .combine-sidebar {
+        padding: 0.75rem;
+        border-radius: 8px;
+    }
+
+    .sidebar-section {
+        margin-bottom: 0.75rem;
+    }
+
+    .sidebar-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .combine-sidebar .form-label {
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .combine-sidebar .form-select,
+    .combine-sidebar .form-input {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .combine-main {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .prompts-panel,
+    .preview-panel {
+        border-radius: 8px;
+    }
+
+    .panel-header {
+        padding: 0.75rem;
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .panel-header h3 {
+        font-size: 1rem;
+    }
+
+    .panel-actions {
+        gap: 0.25rem;
+    }
+
+    .btn-sm {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .prompts-list {
+        max-height: 200px;
+        padding: 0.5rem;
+    }
+
+    .prompt-item {
+        padding: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .prompt-name {
+        font-size: 0.875rem;
+    }
+
+    .prompt-comment {
+        font-size: 0.75rem;
+    }
+
+    .preview-text {
+        max-height: 150px;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .selected-count {
+        font-size: 0.75rem;
+        padding: 0.125rem 0.5rem;
+    }
+}
+
 .prompt-item {
     display: flex;
     align-items: center;
@@ -531,6 +630,8 @@ body {
 .preview-text {
     padding: 1.5rem;
     min-height: 200px;
+    max-height: 300px;
+    overflow-y: auto;
     border: 2px dashed #d1d5db;
     border-radius: 8px;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
@@ -1015,6 +1116,24 @@ body {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+    .navbar {
+        padding: 0.5rem 0;
+    }
+
+    .nav-title {
+        display: none;
+    }
+
+    .nav-title-short {
+        display: block;
+        font-size: 1.25rem;
+    }
+
+    .nav-logo {
+        width: 28px;
+        height: 28px;
+    }
+
     .nav-menu {
         display: none;
         position: absolute;
@@ -1023,7 +1142,7 @@ body {
         right: 0;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         flex-direction: column;
-        padding: 1rem;
+        padding: 0.5rem;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
@@ -1031,8 +1150,29 @@ body {
         display: flex;
     }
 
+    .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
     .nav-toggle {
         display: flex;
+    }
+
+    .main-content {
+        padding: 1rem 0;
+    }
+
+    .page-header {
+        margin-bottom: 1rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .page-subtitle {
+        font-size: 0.875rem;
     }
 
     .hero-title {
@@ -1041,17 +1181,21 @@ body {
 
     .feature-grid {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: 1rem;
     }
 
+    /* 移除旧的 combine-layout 样式，使用上面定义的新样式 */
     .combine-layout {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
     }
 
     .combine-main {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
     }
 
     .manage-toolbar {
@@ -1107,8 +1251,69 @@ body {
 }
 
 @media (max-width: 480px) {
+    html {
+        font-size: 14px;
+    }
+
     .container {
         padding: 0 0.5rem;
+    }
+
+    /* 词条组合页面小屏幕优化 */
+    .combine-sidebar {
+        padding: 0.5rem;
+    }
+
+    .sidebar-section {
+        margin-bottom: 0.5rem;
+    }
+
+    .combine-sidebar .form-label {
+        font-size: 0.8125rem;
+    }
+
+    .combine-sidebar .form-select,
+    .combine-sidebar .form-input {
+        padding: 0.375rem;
+        font-size: 0.8125rem;
+    }
+
+    .panel-header {
+        padding: 0.5rem;
+    }
+
+    .panel-header h3 {
+        font-size: 0.9375rem;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.375rem;
+        font-size: 0.6875rem;
+    }
+
+    .prompts-list {
+        max-height: 160px;
+        padding: 0.375rem;
+    }
+
+    .prompt-item {
+        padding: 0.375rem;
+    }
+
+    .prompt-name {
+        font-size: 0.8125rem;
+    }
+
+    .preview-text {
+        max-height: 120px;
+        padding: 0.5rem;
+        font-size: 0.8125rem;
+        min-height: 120px;
+    }
+
+    .selected-count {
+        font-size: 0.6875rem;
+        padding: 0.125rem 0.375rem;
     }
 
     .page-header {
